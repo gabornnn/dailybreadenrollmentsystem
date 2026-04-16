@@ -1,0 +1,23 @@
+<?php
+require_once 'db_connection.php';
+
+echo "<h1>Database Connection Test</h1>";
+
+// Test query
+$stmt = $pdo->query("SELECT COUNT(*) as total FROM enrollees");
+$result = $stmt->fetch();
+
+echo "<p>✅ Connected successfully to database: <strong>$dbname</strong></p>";
+echo "<p>📊 Total enrollees in database: <strong>" . $result['total'] . "</strong></p>";
+
+// Show all tables
+$stmt = $pdo->query("SHOW TABLES");
+$tables = $stmt->fetchAll();
+
+echo "<h2>Tables in database:</h2>";
+echo "<ul>";
+foreach($tables as $table) {
+    echo "<li>" . implode(', ', $table) . "</li>";
+}
+echo "</ul>";
+?>
