@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Bread Learning Center | Christian Preschool in Kalookan City</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="shortcut icon" href="images/logo.png">
     <style>
         * {
             margin: 0;
@@ -17,7 +19,7 @@
             line-height: 1.6;
         }
 
-        /* Header / Navigation */
+        /* Header */
         .header {
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -30,21 +32,32 @@
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px 30px;
+            padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
         }
 
-        .logo h1 {
-            font-size: 22px;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo img {
+            height: 50px;
+            width: auto;
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
             color: #2c3e50;
             letter-spacing: 1px;
         }
 
-        .logo p {
-            font-size: 11px;
+        .logo-text p {
+            font-size: 10px;
             color: #7f8c8d;
             letter-spacing: 2px;
         }
@@ -148,7 +161,19 @@
             margin-bottom: 20px;
         }
 
-        
+        .about-image {
+            height: 300px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .about-image img {
+            max-width: 80%;
+            max-height: 80%;
+            opacity: 1;
+        }
 
         /* Program Cards */
         .programs-grid {
@@ -216,11 +241,12 @@
             margin: 0 auto;
         }
 
-        .portals-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+        .portals-row {
+            display: flex;
             gap: 25px;
-            margin-top: 40px;
+            justify-content: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
         }
 
         .portal-btn {
@@ -233,6 +259,8 @@
             transition: all 0.3s;
             border: 1px solid #e0e0e0;
             cursor: pointer;
+            flex: 1;
+            min-width: 200px;
         }
 
         .portal-btn:hover {
@@ -257,49 +285,6 @@
         .portal-btn.enroll h3 { color: #27ae60; }
         .portal-btn.view h3 { color: #9b59b6; }
         .portal-btn.tuition h3 { color: #1abc9c; }
-
-        .portal-btn.admin:hover { border-color: #e74c3c; }
-        .portal-btn.registrar:hover { border-color: #3498db; }
-        .portal-btn.cashier:hover { border-color: #f39c12; }
-        .portal-btn.enroll:hover { border-color: #27ae60; }
-        .portal-btn.view:hover { border-color: #9b59b6; }
-        .portal-btn.tuition:hover { border-color: #1abc9c; }
-
-        /* Two column layout for portals */
-        .portals-row {
-            display: flex;
-            gap: 25px;
-            justify-content: center;
-            margin-bottom: 25px;
-        }
-
-        .portals-row .portal-btn {
-            flex: 1;
-        }
-
-        /* Testimonials */
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .testimonial-card {
-            background: #f9f9f9;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .testimonial-card p {
-            font-style: italic;
-            color: #555;
-            margin-bottom: 15px;
-        }
-
-        .testimonial-card h4 {
-            color: #2c3e50;
-        }
 
         /* Footer */
         .footer {
@@ -360,9 +345,6 @@
             .section {
                 padding: 50px 20px;
             }
-            .portals-grid {
-                grid-template-columns: 1fr;
-            }
             .portals-row {
                 flex-direction: column;
             }
@@ -374,8 +356,11 @@
     <header class="header">
         <div class="nav-container">
             <div class="logo">
-                <h1>DAILY BREAD</h1>
-                <p>LEARNING CENTER INC.</p>
+                <img src="images/logo.png" alt="Daily Bread Learning Center Logo">
+                <div class="logo-text">
+                    <h1>DAILY BREAD</h1>
+                    <p>LEARNING CENTER INC.</p>
+                </div>
             </div>
             <ul class="nav-links">
                 <li><a href="#home">Home</a></li>
@@ -404,11 +389,40 @@
                 <p>At Daily Bread Learning Center, we believe that all young learners should be respected, valued, and encouraged to investigate the world around them. We provide a private preschool education rich in experiential learning, intentional exploration, and meaningful social-emotional development.</p>
                 <p>Our Christ-centered curriculum integrates academic excellence with Christian values, helping children develop a strong moral foundation while building essential skills for lifelong learning.</p>
             </div>
+            <div class="about-image">
+                <img src="images/logo.png" alt="Daily Bread Logo">
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission & Vision Section -->
+    <section class="section" style="background: #f5f6fa;">
+        <div style="max-width: 1000px; margin: 0 auto;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                
+                <!-- Vision Card -->
+                <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;"></div>
+                    <h3 style="color: #2c3e50; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #e74c3c; display: inline-block; padding-bottom: 10px;">Vision</h3>
+                    <p style="color: #555; line-height: 1.8; margin-top: 20px; font-size: 16px;">
+                        The Vision for the early learning program is to provide early childhood education for preschool-aged children in a joyful, nurturing and a safe environment.
+                    </p>
+                </div>
+                
+                <!-- Mission Card -->
+                <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;"></div>
+                    <h3 style="color: #2c3e50; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #27ae60; display: inline-block; padding-bottom: 10px;">Mission</h3>
+                    <p style="color: #555; line-height: 1.8; margin-top: 20px; font-size: 16px;">
+                        The Mission is to provide a preschool for each child to be a lifelong Learner, to prepare each child to become independent, to maximize readiness for ongoing school experiences, and to promote family-centered education.
+                    </p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Programs Section -->
-    <section id="programs" class="section" style="background: #f5f6fa;">
+    <section id="programs" class="section">
         <h2 class="section-title">Our Programs</h2>
         <p class="section-subtitle">Developmentally appropriate curriculum for every stage</p>
         <div class="programs-grid">
@@ -474,69 +488,26 @@
         </div>
     </section>
 
-    <!-- Testimonials Section -->
-    <section class="section">
-        <h2 class="section-title">What Parents Say</h2>
-        <p class="section-subtitle">Stories from our Daily Bread family</p>
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <p>"Daily Bread has been a blessing to our family. The teachers are caring and professional, and our son has grown so much in his confidence and learning."</p>
-                <h4>- Maria Santos</h4>
-            </div>
-            <div class="testimonial-card">
-                <p>"The Christ-centered environment and academic excellence make Daily Bread the best choice for our daughter. She loves going to school every day!"</p>
-                <h4>- John Dela Cruz</h4>
-            </div>
-            <div class="testimonial-card">
-                <p>"We appreciate how the school communicates with parents and involves us in our child's learning journey. Highly recommended!"</p>
-                <h4>- Ana Reyes</h4>
-            </div>
+    <!-- Contact Section -->
+    <section id="contact" class="section" style="background: #f5f6fa;">
+        <h2 class="section-title">Contact Us</h2>
+        <p class="section-subtitle">Visit us or get in touch</p>
+        
+        <div style="text-align: center; max-width: 500px; margin: 0 auto;">
+            <img src="images/logo.png" alt="Logo" style="height: 60px; margin-bottom: 20px;">
+            <h3 style="color: #2c3e50; margin-bottom: 20px;">Daily Bread Learning Center Inc.</h3>
+            <p>Block 1, Lot 17 Palmera Springs 38<br>Camarin, Kalookan City</p>
+            <p><strong>Phone:</strong> 0923-4701532</p>
+            <p><strong>Email:</strong> info@dailybread.edu.ph</p>
+            <p><strong>Office Hours:</strong> Monday to Friday, 8:00 AM - 4:00 PM</p>
         </div>
     </section>
-
-    <!-- Contact Section -->
-<section id="contact" class="section" style="background: #f5f6fa;">
-    <h2 class="section-title">Contact Us</h2>
-    <p class="section-subtitle">Visit us or get in touch</p>
-    
-    <div style="max-width: 600px; margin: 0 auto; text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-        <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 24px;">Daily Bread Learning Center Inc.</h3>
-        
-        <div style="margin: 25px 0;">
-            <p style="margin: 8px 0; color: #555;">
-                <strong>Address:</strong><br>
-                Block 1, Lot 17 Palmera Springs 38<br>
-                Camarin, Kalookan City
-            </p>
-        </div>
-        
-        <div style="margin: 25px 0;">
-            <p style="margin: 8px 0; color: #555;">
-                <strong>Phone:</strong><br>
-                0923-4701532
-            </p>
-        </div>
-        
-        <div style="margin: 25px 0;">
-            <p style="margin: 8px 0; color: #555;">
-                <strong>Email:</strong><br>
-                info@dailybread.edu.ph
-            </p>
-        </div>
-        
-        <div style="margin: 25px 0;">
-            <p style="margin: 8px 0; color: #555;">
-                <strong>Office Hours:</strong><br>
-                Monday to Friday, 8:00 AM - 4:00 PM
-            </p>
-        </div>
-    </div>
-</section>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-col">
+                <img src="images/logo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;">
                 <h4>Daily Bread Learning Center</h4>
                 <p>Block 1, Lot 17 Palmera Springs 38</p>
                 <p>Camarin, Kalookan City</p>
@@ -553,8 +524,7 @@
             </div>
             <div class="footer-col">
                 <h4>Follow Us</h4>
-                <a href="#">Facebook</a>
-                <a href="#">Instagram</a>
+                <a href="https://www.facebook.com/dailybreadlearningcenterinc">Facebook</a>
             </div>
         </div>
         <div class="footer-bottom">

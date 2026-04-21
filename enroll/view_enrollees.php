@@ -11,124 +11,212 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enrolled Students - Daily Bread Learning Center</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f4f4f4;
-            padding: 20px;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+        
+        /* Header Styles */
         .header {
             background: #2c3e50;
             color: white;
-            padding: 30px;
             text-align: center;
+            padding: 20px;
         }
+        
+        .header img {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin: 5px 0;
+        }
+        
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+            margin: 3px 0;
+        }
+        
+        /* Navigation Styles */
         .nav {
             background: #34495e;
-            padding: 0;
+            padding: 12px;
             display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
         }
+        
         .nav a {
             color: white;
             text-decoration: none;
-            padding: 15px 30px;
-            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+            font-weight: 500;
         }
-        .nav a:hover, .nav a.active {
-            background: #27ae60;
+        
+        .nav a:hover {
+            background: #e74c3c;
         }
-        .content {
-            padding: 30px;
+        
+        .nav a.active {
+            background: #e74c3c;
         }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Bar with Back Button */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .page-header h2 {
+            color: #2c3e50;
+        }
+        
+        .back-btn {
+            background: #3498db;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* Table Styles */
         table {
             width: 100%;
+            background: white;
             border-collapse: collapse;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        
         th, td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+        
         th {
-            background: #27ae60;
+            background: #3498db;
             color: white;
         }
+        
         tr:hover {
             background: #f5f5f5;
         }
-        .back-btn {
-            display: inline-block;
-            background: #3498db;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
+        
+        /* Footer */
         .footer {
             background: #2c3e50;
             color: white;
             text-align: center;
             padding: 20px;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 12px;
+                padding: 8px;
+            }
+            .nav {
+                gap: 10px;
+            }
+            .nav a {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
+    <!-- Header -->
     <div class="header">
-        <h1>📊 Enrolled Students Database</h1>
-        <p>Daily Bread Learning Center Inc.</p>
+        <img src="images/logo.png" alt="Logo">
+        <h1>DAILY BREAD LEARNING CENTER INC.</h1>
+        <p>Preschool Department - Academy Year 2026-2027</p>
+        <p>Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City | 0923-4701532</p>
     </div>
     
+    <!-- Navigation -->
     <div class="nav">
-    <a href="welcome.php">Home</a>
-    <a href="index.php" >Registration Form</a>
-    <a href="view_enrollees.php" class="active">Enrolled Students</a>
-    <a href="tuition_fees.php">Tuition and Fees</a>
-    <a href="welcome.php#portals">Staff Portals</a>
-</div>
-    
-    <div class="content">
-        <a href="index.php" class="back-btn">← Back to Registration</a>
-        
-        <h2>Total Enrolled: <?php echo count($enrollees); ?> students</h2>
-        
-        <table>
-            <thead>
-                <tr><th>ID</th><th>Last Name</th><th>First Name</th><th>Program</th><th>Student Type</th><th>Payment</th><th>Enrollment Date</th></tr>
-            </thead>
-            <tbody>
-                <?php foreach($enrollees as $e): ?>
-                <tr>
-                    <td><?php echo $e['enrollee_id']; ?></td>
-                    <td><?php echo htmlspecialchars($e['last_name']); ?></td>
-                    <td><?php echo htmlspecialchars($e['first_name']); ?></td>
-                    <td><?php echo $e['program_level']; ?></td>
-                    <td><?php echo $e['student_type']; ?></td>
-                    <td>₱<?php echo number_format($e['payment_amount'], 2); ?></td>
-                    <td><?php echo date('M d, Y', strtotime($e['created_at'])); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <a href="welcome.php">Home</a>
+        <a href="index.php">Registration Form</a>
+        <a href="view_enrollees.php" class="active">Enrolled Students</a>
+        <a href="tuition_fees.php">Tuition and Fees</a>
+        <a href="welcome.php#portals">Staff Portals</a>
     </div>
     
+    <!-- Content -->
+    <div class="container">
+        <div class="page-header">
+            <h2>Enrolled Students</h2>
+            <a href="welcome.php" class="back-btn">← Back to Home</a>
+        </div>
+        
+        <p style="margin-bottom: 15px; color: #666;">Total Enrolled: <?php echo count($enrollees); ?> students</p>
+        
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Last Name</th>
+                        <th>First Name</th>
+                        <th>Program</th>
+                        <th>Student Type</th>
+                        <th>Payment</th>
+                        <th>Enrollment Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($enrollees as $e): ?>
+                    <tr>
+                        <td><?php echo $e['enrollee_id']; ?></td>
+                        <td><?php echo htmlspecialchars($e['last_name']); ?></td>
+                        <td><?php echo htmlspecialchars($e['first_name']); ?></td>
+                        <td><?php echo $e['program_level']; ?></td>
+                        <td><?php echo $e['student_type']; ?></td>
+                        <td>₱<?php echo number_format($e['payment_amount'], 2); ?></td>
+                        <td><?php echo date('M d, Y', strtotime($e['created_at'])); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Footer -->
     <div class="footer">
         <p>© Daily Bread Learning Center Inc. — Secure enrollment database</p>
     </div>
-</div>
 </body>
 </html>

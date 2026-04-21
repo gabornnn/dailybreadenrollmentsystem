@@ -75,6 +75,8 @@ if(isset($_POST['login'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Login - Daily Bread Learning Center</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+<link rel="shortcut icon" href="images/logo.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
@@ -99,13 +101,16 @@ if(isset($_POST['login'])) {
         .info strong { color: #2c3e50; }
         .info p { margin: 5px 0; }
         hr { margin: 15px 0; border: none; border-top: 1px solid #eee; }
+        .logo { text-align: center;}
     </style>
 </head>
 <body>
 <div class="login-container">
-    <div class="logo">🏫</div>
-    <h2>Staff Login Portal</h2>
-    
+    <div class="logo">
+    <img src="images/logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;">
+</div>
+     <h2>Staff Login Portal</h2>
+     
     <div class="role-badge <?php echo $selected_role; ?>">
         <?php 
         if($selected_role == 'admin') echo "ADMIN PORTAL";
