@@ -53,13 +53,13 @@ if(isset($_POST['enroll_student'])) {
         // Start transaction
         $pdo->beginTransaction();
         
-        // Insert into enrollees
+        // Insert into enrollees - DEFAULT STATUS IS 'PENDING'
         $stmt = $pdo->prepare("INSERT INTO enrollees (
             student_type, program_level, payment_plan, payment_amount, 
             last_name, first_name, middle_name, nickname, 
             birth_date, place_of_birth, address,
-            created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            enrollment_status, qualification_status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Pending', NOW())");
         
         $stmt->execute([
             $student_type, $program_level, $payment_plan, $payment_amount,
@@ -136,14 +136,14 @@ if(isset($_POST['enroll_student'])) {
         // Commit transaction
         $pdo->commit();
         
-        $success = "Student successfully enrolled! Enrollment ID: " . $enrollee_id;
+        $success = "Application Submitted Successfully! Your application is pending review. Application ID: " . $enrollee_id;
         
         // Clear form data after success
         $_POST = array();
         
     } catch(Exception $e) {
         $pdo->rollBack();
-        $error = "Enrollment failed: " . $e->getMessage();
+        $error = "Application failed: " . $e->getMessage();
     }
 }
 ?>
@@ -166,7 +166,6 @@ if(isset($_POST['enroll_student'])) {
             background: #f4f4f4;
         }
 
-        /* Header Styles */
         .header {
             background: #2c3e50;
             color: white;
@@ -190,7 +189,6 @@ if(isset($_POST['enroll_student'])) {
             margin: 3px 0;
         }
 
-        /* Navigation Styles */
         .nav {
             background: #34495e;
             padding: 12px;
@@ -209,22 +207,16 @@ if(isset($_POST['enroll_student'])) {
             font-weight: 500;
         }
 
-        .nav a:hover {
+        .nav a:hover, .nav a.active {
             background: #e74c3c;
         }
 
-        .nav a.active {
-            background: #e74c3c;
-        }
-
-        /* Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Form Sections */
         .section {
             background: white;
             padding: 20px;
@@ -295,7 +287,6 @@ if(isset($_POST['enroll_student'])) {
             width: auto;
         }
 
-        /* File Upload */
         .file-upload {
             border: 2px dashed #ddd;
             padding: 20px;
@@ -314,18 +305,15 @@ if(isset($_POST['enroll_student'])) {
             margin-top: 5px;
         }
 
-        /* Submit Button */
         .submit-btn {
             background: #27ae60;
             color: white;
-            position: relative;
-            left: 90%;
-            padding: 15px 20px;
+            padding: 15px 40px;
             border: none;
             border-radius: 5px;
             font-size: 18px;
             cursor: pointer;
-            width: 10%;
+            width: 100%;
             transition: background 0.3s;
         }
 
@@ -333,7 +321,6 @@ if(isset($_POST['enroll_student'])) {
             background: #219a52;
         }
 
-        /* Alert Messages */
         .alert-success {
             background: #d4edda;
             color: #155724;
@@ -352,7 +339,6 @@ if(isset($_POST['enroll_student'])) {
             border-left: 4px solid #dc3545;
         }
 
-        /* Footer */
         .footer {
             background: #2c3e50;
             color: white;
@@ -376,6 +362,50 @@ if(isset($_POST['enroll_student'])) {
         }
     </style>
     <script>
+        function calculateAge(birthDate) {
+            var today = new Date();
+            var birth = new Date(birthDate);
+            var age = today.getFullYear() - birth.getFullYear();
+            var m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function validateForm() {
+            var required = document.querySelectorAll('[required]');
+            for (var i = 0; i < required.length; i++) {
+                if (!required[i].value) {
+                    alert('Please fill in all required fields.');
+                    required[i].focus();
+                    return false;
+                }
+            }
+            
+            var birthDate = document.querySelector('[name="birth_date"]').value;
+            if (birthDate) {
+                var age = calculateAge(birthDate);
+                if (age < 3 || age > 6) {
+                    alert('Student must be between 3 and 6 years old for preschool program.');
+                    return false;
+                }
+            }
+            
+            var phonePattern = /^(09|\+639)\d{9}$/;
+            var phoneInputs = ['mother_phone', 'father_phone', 'emergency_phone'];
+            for (var i = 0; i < phoneInputs.length; i++) {
+                var phone = document.querySelector('[name="' + phoneInputs[i] + '"]');
+                if (phone && phone.value && !phonePattern.test(phone.value)) {
+                    alert('Please enter a valid Philippine mobile number (e.g., 09123456789)');
+                    phone.focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
         function updatePaymentAmount() {
             const program = document.getElementById('program_level').value;
             const plan = document.getElementById('payment_plan').value;
@@ -386,15 +416,27 @@ if(isset($_POST['enroll_student'])) {
                 'KINDERGARTEN 2': {'Cash (Full)': 18300, 'Semi Annual': 10100, 'Quarterly': 7550, 'Monthly': 6200}
             };
             
-            if(amounts[program] && amounts[program][plan]) {
+            if (amounts[program] && amounts[program][plan]) {
                 document.getElementById('payment_amount_display').value = '₱' + amounts[program][plan].toLocaleString();
                 document.getElementById('payment_amount_hidden').value = amounts[program][plan];
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!validateForm()) {
+                        e.preventDefault();
+                    } else {
+                        return confirm('Submit Application? Please review all information before submitting.');
+                    }
+                });
+            }
+        });
     </script>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <img src="images/logo.png" alt="Logo">
         <h1>DAILY BREAD LEARNING CENTER INC.</h1>
@@ -402,26 +444,24 @@ if(isset($_POST['enroll_student'])) {
         <p>Preschool Department - Academy Year 2026-2027</p>
     </div>
     
-    <!-- Navigation -->
     <div class="nav">
         <a href="welcome.php">Home</a>
         <a href="index.php" class="active">Registration Form</a>
         <a href="view_enrollees.php">Enrolled Students</a>
         <a href="tuition_fees.php">Tuition and Fees</a>
+         <a href="online_payment.php">💳 Pay Online</a>
         <a href="welcome.php#portals">Staff Portals</a>
     </div>
     
-    <!-- Content -->
     <div class="container">
         <?php if($success): ?>
-            <div class="alert-success"><?php echo $success; ?></div>
+            <div class="alert-success">✓ <?php echo $success; ?></div>
         <?php endif; ?>
         <?php if($error): ?>
-            <div class="alert-error"><?php echo $error; ?></div>
+            <div class="alert-error">✗ <?php echo $error; ?></div>
         <?php endif; ?>
         
         <form method="POST" enctype="multipart/form-data">
-            <!-- Student Type -->
             <div class="section">
                 <h2>Student Enrollment & Medical Authorization</h2>
                 <div class="form-group">
@@ -434,7 +474,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Program & Payment -->
             <div class="section">
                 <h2>Program & Payment</h2>
                 <div class="form-row">
@@ -463,7 +502,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Student Personal Information -->
             <div class="section">
                 <h2>Student Information</h2>
                 <div class="form-row">
@@ -504,7 +542,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Parents Information -->
             <div class="section">
                 <h2>Parents Information</h2>
                 <div class="form-row">
@@ -514,7 +551,7 @@ if(isset($_POST['enroll_student'])) {
                     </div>
                     <div class="form-group">
                         <label>Mother's Contact Number</label>
-                        <input type="text" name="mother_phone">
+                        <input type="text" name="mother_phone" placeholder="09XXXXXXXXX">
                     </div>
                     <div class="form-group">
                         <label>Mother's Employer</label>
@@ -528,7 +565,7 @@ if(isset($_POST['enroll_student'])) {
                     </div>
                     <div class="form-group">
                         <label>Father's Contact Number</label>
-                        <input type="text" name="father_phone">
+                        <input type="text" name="father_phone" placeholder="09XXXXXXXXX">
                     </div>
                     <div class="form-group">
                         <label>Father's Employer</label>
@@ -537,7 +574,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Emergency Contact -->
             <div class="section">
                 <h2>Emergency Contact</h2>
                 <div class="form-row">
@@ -547,7 +583,7 @@ if(isset($_POST['enroll_student'])) {
                     </div>
                     <div class="form-group">
                         <label>Emergency Contact Phone *</label>
-                        <input type="text" name="emergency_phone" required>
+                        <input type="text" name="emergency_phone" required placeholder="09XXXXXXXXX">
                     </div>
                     <div class="form-group">
                         <label>Relationship</label>
@@ -560,7 +596,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Medical Information -->
             <div class="section">
                 <h2>Medical Information</h2>
                 <div class="form-row">
@@ -587,7 +622,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Required Documents -->
             <div class="section">
                 <h2>Required Documents</h2>
                 <div class="form-row">
@@ -615,7 +649,6 @@ if(isset($_POST['enroll_student'])) {
                 </div>
             </div>
             
-            <!-- Emergency Consent -->
             <div class="section">
                 <h2>EMERGENCY CONSENT</h2>
                 <p style="margin-bottom: 15px; color: #555;">I give consent for my/our child to be taken to the nearest emergency center by staff when parent cannot be contacted. I agree to pay transport costs.</p>
@@ -632,11 +665,10 @@ if(isset($_POST['enroll_student'])) {
                 <p style="margin-top: 15px; font-size: 12px; color: #999;">Immunization record: Please submit photocopy to center. By enrolling you confirm records will be provided.</p>
             </div>
             
-            <button type="submit" name="enroll_student" class="submit-btn">SUBMIT </button>
+            <button type="submit" name="enroll_student" class="submit-btn">SUBMIT APPLICATION</button>
         </form>
     </div>
     
-    <!-- Footer -->
     <div class="footer">
         <p>© Daily Bread Learning Center Inc. — Secure enrollment database | For immunization, please attach physical copy.</p>
     </div>

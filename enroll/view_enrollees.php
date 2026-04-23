@@ -1,8 +1,14 @@
 <?php
 require_once 'db_connection.php';
 
-// Get all enrollees
-$stmt = $pdo->query("SELECT * FROM enrollees ORDER BY created_at DESC");
+// Only show students who are Enrolled and Qualified
+$stmt = $pdo->query("
+    SELECT * FROM enrollees 
+    WHERE enrollment_status = 'Enrolled' 
+    AND qualification_status = 'Qualified'
+    AND (is_archived = 0 OR is_archived IS NULL)
+    ORDER BY created_at DESC
+");
 $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -13,152 +19,38 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Enrolled Students - Daily Bread Learning Center</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f4f4;
-        }
+        .header { background: #2c3e50; color: white; text-align: center; padding: 20px; }
+        .header img { height: 60px; margin-bottom: 10px; }
+        .header h1 { font-size: 24px; margin: 5px 0; }
+        .header p { font-size: 12px; opacity: 0.9; margin: 3px 0; }
         
-        /* Header Styles */
-        .header {
-            background: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
+        .nav { background: #34495e; padding: 12px; display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; }
+        .nav a { color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; transition: background 0.3s; }
+        .nav a:hover, .nav a.active { background: #e74c3c; }
         
-        .header img {
-            height: 60px;
-            margin-bottom: 10px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .page-header h2 { color: #2c3e50; }
+        .back-btn { background: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; }
         
-        .header h1 {
-            font-size: 24px;
-            margin: 5px 0;
-        }
+        table { width: 100%; background: white; border-collapse: collapse; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #3498db; color: white; }
+        tr:hover { background: #f5f5f5; }
         
-        .header p {
-            font-size: 12px;
-            opacity: 0.9;
-            margin: 3px 0;
-        }
-        
-        /* Navigation Styles */
-        .nav {
-            background: #34495e;
-            padding: 12px;
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            flex-wrap: wrap;
-        }
-        
-        .nav a {
-            color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: background 0.3s;
-            font-weight: 500;
-        }
-        
-        .nav a:hover {
-            background: #e74c3c;
-        }
-        
-        .nav a.active {
-            background: #e74c3c;
-        }
-        
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        /* Header Bar with Back Button */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .page-header h2 {
-            color: #2c3e50;
-        }
-        
-        .back-btn {
-            background: #3498db;
-            color: white;
-            padding: 8px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-        
-        .back-btn:hover {
-            background: #2980b9;
-        }
-        
-        /* Table Styles */
-        table {
-            width: 100%;
-            background: white;
-            border-collapse: collapse;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background: #3498db;
-            color: white;
-        }
-        
-        tr:hover {
-            background: #f5f5f5;
-        }
-        
-        /* Footer */
-        .footer {
-            background: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            margin-top: 30px;
-        }
+        .footer { background: #2c3e50; color: white; text-align: center; padding: 20px; font-size: 12px; margin-top: 30px; }
         
         @media (max-width: 768px) {
-            th, td {
-                font-size: 12px;
-                padding: 8px;
-            }
-            .nav {
-                gap: 10px;
-            }
-            .nav a {
-                padding: 5px 10px;
-                font-size: 12px;
-            }
+            th, td { font-size: 12px; padding: 8px; }
+            .nav { gap: 10px; }
+            .nav a { padding: 5px 10px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <img src="images/logo.png" alt="Logo">
         <h1>DAILY BREAD LEARNING CENTER INC.</h1>
@@ -166,7 +58,6 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <p>Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City | 0923-4701532</p>
     </div>
     
-    <!-- Navigation -->
     <div class="nav">
         <a href="welcome.php">Home</a>
         <a href="index.php">Registration Form</a>
@@ -175,7 +66,6 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a href="welcome.php#portals">Staff Portals</a>
     </div>
     
-    <!-- Content -->
     <div class="container">
         <div class="page-header">
             <h2>Enrolled Students</h2>
@@ -193,7 +83,6 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <th>First Name</th>
                         <th>Program</th>
                         <th>Student Type</th>
-                        <th>Payment</th>
                         <th>Enrollment Date</th>
                     </tr>
                 </thead>
@@ -205,16 +94,17 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?php echo htmlspecialchars($e['first_name']); ?></td>
                         <td><?php echo $e['program_level']; ?></td>
                         <td><?php echo $e['student_type']; ?></td>
-                        <td>₱<?php echo number_format($e['payment_amount'], 2); ?></td>
                         <td><?php echo date('M d, Y', strtotime($e['created_at'])); ?></td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php if(count($enrollees) == 0): ?>
+                        <tr><td colspan="6" style="text-align: center;">No enrolled students found. Check back later!</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
     
-    <!-- Footer -->
     <div class="footer">
         <p>© Daily Bread Learning Center Inc. — Secure enrollment database</p>
     </div>

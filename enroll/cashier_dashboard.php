@@ -29,8 +29,10 @@ if(isset($_POST['update_payment'])) {
     $enrollee_id = $_POST['enrollee_id'];
     $payment_amount = $_POST['payment_amount'];
     
+    // Auto-generate receipt number
     $receipt_number = generateReceiptNumber($pdo);
     
+    // Get current totals
     $stmt = $pdo->prepare("
         SELECT e.payment_amount as total_fee,
                COALESCE(SUM(CASE WHEN pt.payment_type = 'Payment' THEN pt.payment_amount ELSE 0 END), 0) as total_paid,
@@ -49,6 +51,7 @@ if(isset($_POST['update_payment'])) {
     $net_paid = $total_paid - $total_refunded;
     $new_net_paid = $net_paid + $payment_amount;
     
+    // Determine payment status
     if($new_net_paid >= $total_fee) {
         $payment_status = 'Fully Paid';
     } elseif($new_net_paid > 0) {
@@ -57,9 +60,11 @@ if(isset($_POST['update_payment'])) {
         $payment_status = 'Unpaid';
     }
     
+    // Update enrollee payment status
     $stmt = $pdo->prepare("UPDATE enrollees SET payment_status = ? WHERE enrollee_id = ?");
     $stmt->execute([$payment_status, $enrollee_id]);
     
+    // Record transaction
     $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, receipt_number, processed_by, processed_by_user_id, payment_status) VALUES (?, CURDATE(), ?, 'Payment', ?, ?, ?, ?)");
     $stmt->execute([$enrollee_id, $payment_amount, $receipt_number, $_SESSION['full_name'], $_SESSION['user_id'], $payment_status]);
     
@@ -74,6 +79,7 @@ if(isset($_POST['process_refund'])) {
     $refund_reason = $_POST['refund_reason'];
     $receipt_number = generateReceiptNumber($pdo);
     
+    // Get current totals
     $stmt = $pdo->prepare("
         SELECT e.payment_amount as total_fee,
                COALESCE(SUM(CASE WHEN pt.payment_type = 'Payment' THEN pt.payment_amount ELSE 0 END), 0) as total_paid,
@@ -92,6 +98,7 @@ if(isset($_POST['process_refund'])) {
     $net_paid = $total_paid - $total_refunded;
     $new_net_paid = $net_paid - $refund_amount;
     
+    // Determine payment status after refund
     if($new_net_paid <= 0) {
         $payment_status = 'Unpaid';
     } elseif($new_net_paid >= $total_fee) {
@@ -100,9 +107,11 @@ if(isset($_POST['process_refund'])) {
         $payment_status = 'Partial';
     }
     
+    // Record refund transaction
     $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, receipt_number, refund_amount, refund_date, refund_reason, refund_status, processed_by, processed_by_user_id, payment_status) VALUES (?, CURDATE(), ?, 'Refund', ?, ?, CURDATE(), ?, 'Processed', ?, ?, ?)");
     $stmt->execute([$enrollee_id, -$refund_amount, $receipt_number, $refund_amount, $refund_reason, $_SESSION['full_name'], $_SESSION['user_id'], $payment_status]);
     
+    // Update enrollee payment status
     $stmt = $pdo->prepare("UPDATE enrollees SET payment_status = ? WHERE enrollee_id = ?");
     $stmt->execute([$payment_status, $enrollee_id]);
     
@@ -110,13 +119,14 @@ if(isset($_POST['process_refund'])) {
     exit();
 }
 
-// Fetch all enrollees
+// Fetch all enrollees with payment summary
 $stmt = $pdo->query("
     SELECT e.*, 
            COALESCE(SUM(CASE WHEN pt.payment_type = 'Payment' THEN pt.payment_amount ELSE 0 END), 0) as total_paid,
            COALESCE(SUM(CASE WHEN pt.payment_type = 'Refund' THEN ABS(pt.payment_amount) ELSE 0 END), 0) as total_refunded
     FROM enrollees e
     LEFT JOIN payment_transactions pt ON e.enrollee_id = pt.enrollee_id
+    WHERE e.is_archived = 0 OR e.is_archived IS NULL
     GROUP BY e.enrollee_id
     ORDER BY e.enrollee_id DESC
 ");
@@ -134,25 +144,19 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; }
         
-        .header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header { background: #f39c12; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header-left img { height: 40px; }
         .logout-btn { background: #e74c3c; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; }
         
         .container { padding: 20px; max-width: 1400px; margin: auto; }
         .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .info-note { background: #fef5e8; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; color: #f39c12; font-size: 13px; }
         
-        .generate-manual-btn {
-            background: #27ae60;
-            color: white;
-            padding: 8px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-        .generate-manual-btn:hover { background: #219a52; }
+        .dashboard-nav { background: white; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .dashboard-nav a { background: #f39c12; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+        .dashboard-nav a:hover { background: #e67e22; }
+        
+        .info-note { background: #fef5e8; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; color: #f39c12; font-size: 13px; }
         
         table { width: 100%; background: white; border-collapse: collapse; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
@@ -189,6 +193,8 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
             th, td { font-size: 12px; padding: 8px; }
             .payment-form { flex-direction: column; }
             .payment-form input, .payment-form button { width: 100%; }
+            .dashboard-nav { flex-direction: column; }
+            .dashboard-nav a { text-align: center; }
         }
     </style>
     <script>
@@ -213,16 +219,16 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
 
 <div class="container">
     <?php if($success): ?>
-        <div class="success"><?php echo htmlspecialchars($success); ?></div>
+        <div class="success"><?php echo $success; ?></div>
     <?php endif; ?>
+    
+
     
     <div class="info-note">
         Receipt numbers are automatically generated in format: RCP-YYYY-XXXX (e.g., RCP-2024-0001)
     </div>
     
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-        <h3>Student Payment Records</h3>
-    </div>
+    <h3>Student Payment Records</h3>
     <p style="margin-bottom: 15px; color: #666;">Update payment status - Receipt number is auto-generated.</p>
     
     <div style="overflow-x: auto;">
@@ -294,6 +300,9 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
                     </td>
                 </tr>
                 <?php endforeach; ?>
+                <?php if(count($enrollees) == 0): ?>
+                <tr><td colspan="10" style="text-align: center;">No students found</td</span>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
