@@ -1,3 +1,40 @@
+<?php
+require_once 'db_connection.php';
+require_once 'includes_functions.php';
+
+// Get tuition fees from system settings
+$nursery_fee = getSetting($pdo, 'enrollment_fee_nursery') ?: 17500;
+$k1_fee = getSetting($pdo, 'enrollment_fee_k1') ?: 18300;
+$k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
+$school_name = getSetting($pdo, 'school_name') ?: 'Daily Bread Learning Center Inc.';
+$school_year = getSetting($pdo, 'school_year') ?: '2026-2027';
+$school_address = getSetting($pdo, 'school_address') ?: 'Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City';
+$school_phone = getSetting($pdo, 'school_phone') ?: '0923-4701532';
+
+// Calculate payment schedule amounts
+function calculatePaymentSchedule($total_fee) {
+    $registration = 500;
+    $tuition = $total_fee - $registration;
+    
+    return [
+        'cash' => $total_fee,
+        'semi_annual' => round($tuition * 0.4 + $registration),
+        'quarterly' => round($tuition * 0.25 + $registration),
+        'monthly' => round($tuition * 0.15 + $registration)
+    ];
+}
+
+$nursery_schedule = calculatePaymentSchedule($nursery_fee);
+$k1_schedule = calculatePaymentSchedule($k1_fee);
+$k2_schedule = calculatePaymentSchedule($k2_fee);
+
+// Monthly payment amounts for schedules
+$monthly_amounts = [
+    'NURSERY' => round(($nursery_fee - 500) * 0.15),
+    'KINDERGARTEN 1' => round(($k1_fee - 500) * 0.15),
+    'KINDERGARTEN 2' => round(($k2_fee - 500) * 0.15)
+];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +54,6 @@
             background: #f4f4f4;
         }
         
-        /* Header Styles */
         .header {
             background: #2c3e50;
             color: white;
@@ -41,7 +77,6 @@
             margin: 3px 0;
         }
         
-        /* Navigation Styles */
         .nav {
             background: #34495e;
             padding: 12px;
@@ -60,22 +95,16 @@
             font-weight: 500;
         }
         
-        .nav a:hover {
+        .nav a:hover, .nav a.active {
             background: #e74c3c;
         }
         
-        .nav a.active {
-            background: #e74c3c;
-        }
-        
-        /* Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
         
-        /* Header Bar with Back Button */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -95,16 +124,14 @@
             padding: 8px 15px;
             text-decoration: none;
             border-radius: 5px;
-            transition: background 0.3s;
         }
         
         .back-btn:hover {
             background: #2980b9;
         }
         
-        /* Program Section */
         .program-section {
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             background: white;
             border-radius: 10px;
             overflow: hidden;
@@ -127,6 +154,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
         
         th, td {
@@ -140,12 +168,13 @@
             color: white;
         }
         
-        .section-title {
+        .schedule-title {
             background: #2c3e50;
             color: white;
             padding: 10px 15px;
-            margin: 20px 0 10px;
+            margin: 20px 0 15px;
             border-radius: 5px;
+            font-size: 16px;
         }
         
         .amount {
@@ -167,7 +196,6 @@
             color: #2c3e50;
         }
         
-        /* Footer */
         .footer {
             background: #2c3e50;
             color: white;
@@ -193,143 +221,254 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
         <img src="images/logo.png" alt="Logo">
-        <h1>DAILY BREAD LEARNING CENTER INC.</h1>
-        <p>Preschool Department - Academy Year 2026-2027</p>
-        <p>Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City | 0923-4701532</p>
+        <h1><?php echo htmlspecialchars($school_name); ?></h1>
+        <p><?php echo htmlspecialchars($school_address); ?> | <?php echo htmlspecialchars($school_phone); ?></p>
+        <p>Preschool Department - Academy Year <?php echo htmlspecialchars($school_year); ?></p>
     </div>
     
-    <!-- Navigation -->
     <div class="nav">
         <a href="welcome.php">Home</a>
         <a href="index.php">Registration Form</a>
         <a href="view_enrollees.php">Enrolled Students</a>
         <a href="tuition_fees.php" class="active">Tuition and Fees</a>
+        <a href="online_payment.php">💳 Pay Online</a>
         <a href="welcome.php#portals">Staff Portals</a>
     </div>
     
-    <!-- Content -->
     <div class="container">
         <div class="page-header">
             <h2>TUITION FEE & MISCELLANEOUS</h2>
-            <a href="welcome.php" class="back-btn">← Back to Home</a>
         </div>
-        <p style="margin-bottom: 20px; color: #666;">Academic Year 2026-2027</p>
+        <p style="margin-bottom: 20px; color: #666;">Academic Year <?php echo htmlspecialchars($school_year); ?></p>
         
-        <!-- NURSERY SECTION -->
+        <!-- ============================================ -->
+        <!-- NURSERY SECTION                              -->
+        <!-- ============================================ -->
         <div class="program-section">
-            <div class="program-title">NURSERY</div>
+            <div class="program-title">🏆 NURSERY</div>
             <div class="table-container">
                 <h3 style="margin-bottom: 15px; color: #2c3e50;">Tuition Fee Breakdown</h3>
                 <table>
                     <thead>
-                        <tr><th>DESCRIPTION</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>DESCRIPTION</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Registration</td><td>500.00</td><td>500.00</td><td>500.00</td><td>500.00</td></tr>
-                        <tr><td>Tuition Fee</td><td>13,500.00</td><td>5,400.00</td><td>3,600.00</td><td>2,250.00</td></tr>
-                        <tr><td>Misc. Fee</td><td>3,500.00</td><td>3,000.00</td><td>2,500.00</td><td>2,500.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱17,500.00</strong></td><td class="amount"><strong>₱8,900.00</strong></td><td class="amount"><strong>₱6,600.00</strong></td><td class="amount"><strong>₱5,250.00</strong></td></tr>
+                        <tr><td>Registration</td>
+                            <td>500.00</td>
+                            <td>500.00</td>
+                            <td>500.00</td>
+                            <td>500.00</td>
+                         </tr>
+                        <tr>
+                            <td>Tuition Fee</td>
+                            <td><?php echo number_format($nursery_fee - 500, 2); ?></td>
+                            <td><?php echo number_format(($nursery_fee - 500) * 0.4, 2); ?></td>
+                            <td><?php echo number_format(($nursery_fee - 500) * 0.25, 2); ?></td>
+                            <td><?php echo number_format(($nursery_fee - 500) * 0.15, 2); ?></td>
+                         </tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['semi_annual'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['quarterly'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['monthly'], 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
                 
-                <h3 class="section-title">Schedule of Payment</h3>
+                <!-- NURSERY Payment Schedule -->
+                <div class="schedule-title">📅 Schedule of Payment - NURSERY</div>
                 <table>
                     <thead>
-                        <tr><th>Months</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>Months</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Upon enrollment</td><td>17,500.00</td><td>8,900.00</td><td>6,600.00</td><td>5,250.00</td></tr>
-                        <tr><td>07/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>08/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>09/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,450.00</td></tr>
-                        <tr><td>10/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>11/01/2026</td><td>-</td><td>9,000.00</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>12/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,450.00</td></tr>
-                        <tr><td>01/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>02/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,450.00</td></tr>
-                        <tr><td>03/01/2027</td><td>-</td><td>-</td><td>3,950.00</td><td>1,450.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱17,500.00</strong></td><td class="amount"><strong>₱17,900.00</strong></td><td class="amount"><strong>₱18,450.00</strong></td><td class="amount"><strong>₱18,850.00</strong></td></tr>
+                        <tr><td>Upon enrollment</td>
+                            <td class="amount">₱<?php echo number_format($nursery_schedule['cash'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($nursery_schedule['semi_annual'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($nursery_schedule['quarterly'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td>
+                        </tr>
+                        <tr><td>July 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>August 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>September 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($nursery_schedule['quarterly'] - $monthly_amounts['NURSERY'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>October 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>November 1, <?php echo date('Y'); ?></td><td>-</td><td>₱<?php echo number_format($nursery_schedule['semi_annual'] - $monthly_amounts['NURSERY'] * 2, 2); ?></td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>December 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($nursery_schedule['quarterly'] - $monthly_amounts['NURSERY'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>January 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>February 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr><td>March 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($nursery_schedule['quarterly'] - $monthly_amounts['NURSERY'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['NURSERY'], 2); ?></td></tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['semi_annual'] + $monthly_amounts['NURSERY'] * 2, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['quarterly'] * 3, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($nursery_schedule['monthly'] * 10, 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
         
-        <!-- KINDERGARTEN 1 SECTION -->
+        <!-- ============================================ -->
+        <!-- KINDERGARTEN 1 SECTION                        -->
+        <!-- ============================================ -->
         <div class="program-section">
-            <div class="program-title">KINDERGARTEN 1</div>
+            <div class="program-title">🌟 KINDERGARTEN 1</div>
             <div class="table-container">
                 <h3 style="margin-bottom: 15px; color: #2c3e50;">Tuition Fee Breakdown</h3>
                 <table>
                     <thead>
-                        <tr><th>DESCRIPTION</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>DESCRIPTION</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr><td>Registration</td><td>500.00</td><td>500.00</td><td>500.00</td><td>500.00</td></tr>
-                        <tr><td>Tuition Fee</td><td>14,300.00</td><td>6,400.00</td><td>4,050.00</td><td>2,650.00</td></tr>
-                        <tr><td>Misc. Fee</td><td>3,500.00</td><td>2,500.00</td><td>2,500.00</td><td>2,550.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱18,300.00</strong></td><td class="amount"><strong>₱9,400.00</strong></td><td class="amount"><strong>₱7,050.00</strong></td><td class="amount"><strong>₱5,700.00</strong></td></tr>
+                        <tr><td>Tuition Fee</td>
+                            <td><?php echo number_format($k1_fee - 500, 2); ?></td>
+                            <td><?php echo number_format(($k1_fee - 500) * 0.4, 2); ?></td>
+                            <td><?php echo number_format(($k1_fee - 500) * 0.25, 2); ?></td>
+                            <td><?php echo number_format(($k1_fee - 500) * 0.15, 2); ?></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['semi_annual'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['quarterly'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['monthly'], 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
                 
-                <h3 class="section-title">Schedule of Payment</h3>
+                <!-- KINDERGARTEN 1 Payment Schedule -->
+                <div class="schedule-title">📅 Schedule of Payment - KINDERGARTEN 1</div>
                 <table>
                     <thead>
-                        <tr><th>Months</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>Months</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Upon enrollment</td><td>18,300.00</td><td>9,400.00</td><td>7,050.00</td><td>5,700.00</td></tr>
-                        <tr><td>07/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>08/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>09/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr><td>10/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>11/01/2026</td><td>-</td><td>9,300.00</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>12/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr><td>01/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>02/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>03/01/2027</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱18,300.00</strong></td><td class="amount"><strong>₱18,700.00</strong></td><td class="amount"><strong>₱18,900.00</strong></td><td class="amount"><strong>₱19,200.00</strong></td></tr>
+                        <tr><td>Upon enrollment</td>
+                            <td class="amount">₱<?php echo number_format($k1_schedule['cash'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($k1_schedule['semi_annual'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($k1_schedule['quarterly'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td>
+                        </tr>
+                        <tr><td>July 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>August 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>September 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k1_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 1'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>October 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>November 1, <?php echo date('Y'); ?></td><td>-</td><td>₱<?php echo number_format($k1_schedule['semi_annual'] - $monthly_amounts['KINDERGARTEN 1'] * 2, 2); ?></td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>December 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k1_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 1'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>January 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>February 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr><td>March 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k1_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 1'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 1'], 2); ?></td></tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['semi_annual'] + $monthly_amounts['KINDERGARTEN 1'] * 2, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['quarterly'] * 3, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k1_schedule['monthly'] * 10, 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
         
-        <!-- KINDERGARTEN 2 SECTION -->
+        <!-- ============================================ -->
+        <!-- KINDERGARTEN 2 SECTION                        -->
+        <!-- ============================================ -->
         <div class="program-section">
-            <div class="program-title">KINDERGARTEN 2</div>
+            <div class="program-title">🎓 KINDERGARTEN 2</div>
             <div class="table-container">
                 <h3 style="margin-bottom: 15px; color: #2c3e50;">Tuition Fee Breakdown</h3>
                 <table>
                     <thead>
-                        <tr><th>DESCRIPTION</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>DESCRIPTION</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr><td>Registration</td><td>500.00</td><td>500.00</td><td>500.00</td><td>500.00</td></tr>
-                        <tr><td>Tuition Fee</td><td>14,300.00</td><td>6,600.00</td><td>4,550.00</td><td>3,200.00</td></tr>
-                        <tr><td>Misc. Fee</td><td>3,500.00</td><td>3,000.00</td><td>2,500.00</td><td>2,500.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱18,300.00</strong></td><td class="amount"><strong>₱10,100.00</strong></td><td class="amount"><strong>₱7,550.00</strong></td><td class="amount"><strong>₱6,200.00</strong></td></tr>
+                        <tr><td>Tuition Fee</td>
+                            <td><?php echo number_format($k2_fee - 500, 2); ?></td>
+                            <td><?php echo number_format(($k2_fee - 500) * 0.4, 2); ?></td>
+                            <td><?php echo number_format(($k2_fee - 500) * 0.25, 2); ?></td>
+                            <td><?php echo number_format(($k2_fee - 500) * 0.15, 2); ?></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['semi_annual'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['quarterly'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['monthly'], 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
                 
-                <h3 class="section-title">Schedule of Payment</h3>
+                <!-- KINDERGARTEN 2 Payment Schedule -->
+                <div class="schedule-title">📅 Schedule of Payment - KINDERGARTEN 2</div>
                 <table>
                     <thead>
-                        <tr><th>Months</th><th>Cash (Full)</th><th>Semi Annual</th><th>Quarterly</th><th>Monthly</th></tr>
+                        <tr>
+                            <th>Months</th>
+                            <th>Cash (Full)</th>
+                            <th>Semi Annual</th>
+                            <th>Quarterly</th>
+                            <th>Monthly</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Upon enrollment</td><td>18,300.00</td><td>10,100.00</td><td>7,550.00</td><td>6,200.00</td></tr>
-                        <tr><td>07/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>08/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>09/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr><td>10/01/2026</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>11/01/2026</td><td>-</td><td>9,500.00</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>12/01/2026</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr><td>01/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>02/01/2027</td><td>-</td><td>-</td><td>-</td><td>1,500.00</td></tr>
-                        <tr><td>03/01/2027</td><td>-</td><td>-</td><td>3,950.00</td><td>1,500.00</td></tr>
-                        <tr class="total-row"><td><strong>TOTAL</strong></td><td class="amount"><strong>₱18,300.00</strong></td><td class="amount"><strong>₱19,600.00</strong></td><td class="amount"><strong>₱19,400.00</strong></td><td class="amount"><strong>₱19,700.00</strong></td></tr>
+                        <tr><td>Upon enrollment</td>
+                            <td class="amount">₱<?php echo number_format($k2_schedule['cash'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($k2_schedule['semi_annual'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($k2_schedule['quarterly'], 2); ?></td>
+                            <td class="amount">₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td>
+                        </tr>
+                        <tr><td>July 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>August 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>September 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k2_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 2'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <td><td>October 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>November 1, <?php echo date('Y'); ?></td><td>-</td><td>₱<?php echo number_format($k2_schedule['semi_annual'] - $monthly_amounts['KINDERGARTEN 2'] * 2, 2); ?></td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>December 1, <?php echo date('Y'); ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k2_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 2'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>January 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>February 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>-</td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr><td>March 1, <?php echo date('Y')+1; ?></td><td>-</td><td>-</td><td>₱<?php echo number_format($k2_schedule['quarterly'] - $monthly_amounts['KINDERGARTEN 2'], 2); ?></td><td>₱<?php echo number_format($monthly_amounts['KINDERGARTEN 2'], 2); ?></td></tr>
+                        <tr class="total-row">
+                            <td><strong>TOTAL</strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['cash'], 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['semi_annual'] + $monthly_amounts['KINDERGARTEN 2'] * 2, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['quarterly'] * 3, 2); ?></strong></td>
+                            <td class="amount"><strong>₱<?php echo number_format($k2_schedule['monthly'] * 10, 2); ?></strong></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -337,13 +476,12 @@
         
         <div class="note">
             <strong>Note:</strong> Cash payment is due upon enrollment. Installment plans follow the schedule above.<br>
-            For inquiries, please call 0923-4701532
+            Tuition fees shown are for the full academic year. For inquiries, please call <?php echo htmlspecialchars($school_phone); ?>
         </div>
     </div>
     
-    <!-- Footer -->
     <div class="footer">
-        <p>© Daily Bread Learning Center Inc. — Secure enrollment database</p>
+        <p>© <?php echo htmlspecialchars($school_name); ?> — Secure enrollment database</p>
     </div>
 </body>
 </html>

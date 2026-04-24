@@ -12,20 +12,24 @@ $error = '';
 
 // Handle settings update
 if(isset($_POST['save_settings'])) {
-    $settings = [
+    $settings_keys = [
         'school_name', 'school_year', 'school_address', 'school_phone', 'school_email',
         'gcash_number', 'gcash_name', 'bank_name', 'bank_account', 'bank_account_name',
         'enrollment_fee_nursery', 'enrollment_fee_k1', 'enrollment_fee_k2',
         'backup_auto_schedule', 'maintenance_mode'
     ];
     
-    foreach($settings as $setting) {
-        if(isset($_POST[$setting])) {
-            updateSetting($pdo, $setting, $_POST[$setting]);
+    foreach($settings_keys as $key) {
+        if(isset($_POST[$key])) {
+            updateSetting($pdo, $key, $_POST[$key]);
         }
     }
     
     $success = "Settings saved successfully!";
+    
+    // Refresh to show updated values
+    header("Location: system_settings.php?success=1");
+    exit();
 }
 
 // Handle backup
@@ -44,6 +48,31 @@ $stmt = $pdo->query("SELECT setting_key, setting_value FROM system_settings");
 while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $settings[$row['setting_key']] = $row['setting_value'];
 }
+
+// Set default values if not exists
+$defaults = [
+    'school_name' => 'Daily Bread Learning Center Inc.',
+    'school_year' => '2026-2027',
+    'school_address' => 'Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City',
+    'school_phone' => '0923-4701532',
+    'school_email' => 'info@dailybread.edu.ph',
+    'gcash_number' => '0923-4701532',
+    'gcash_name' => 'Daily Bread Learning Center',
+    'bank_name' => 'Bank of the Philippine Islands (BPI)',
+    'bank_account' => '1234-5678-90',
+    'bank_account_name' => 'Daily Bread Learning Center Inc.',
+    'enrollment_fee_nursery' => '17500',
+    'enrollment_fee_k1' => '18300',
+    'enrollment_fee_k2' => '18300',
+    'backup_auto_schedule' => 'daily',
+    'maintenance_mode' => '0'
+];
+
+foreach($defaults as $key => $default) {
+    if(!isset($settings[$key])) {
+        $settings[$key] = $default;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -57,7 +86,7 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; padding: 20px; }
         
         .container { max-width: 1000px; margin: 0 auto; }
-        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .back-btn { background: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; }
         
         .content { background: white; padding: 25px; border-radius: 0 0 10px 10px; }
@@ -76,18 +105,23 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 5px; margin-bottom: 20px; }
         
         .footer { background: #2c3e50; color: white; text-align: center; padding: 20px; margin-top: 20px; border-radius: 10px; }
+        
+        @media (max-width: 768px) {
+            .form-row { flex-direction: column; }
+            .header { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h2>System Settings</h2>
+        <h2>⚙️ System Settings</h2>
         <a href="admin_dashboard.php" class="back-btn">← Back to Dashboard</a>
     </div>
     
     <div class="content">
-        <?php if($success): ?>
-            <div class="success">✓ <?php echo $success; ?></div>
+        <?php if(isset($_GET['success'])): ?>
+            <div class="success">✓ Settings saved successfully!</div>
         <?php endif; ?>
         <?php if($error): ?>
             <div class="error">✗ <?php echo $error; ?></div>
@@ -100,25 +134,25 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 <div class="form-row">
                     <div class="form-group">
                         <label>School Name</label>
-                        <input type="text" name="school_name" value="<?php echo $settings['school_name'] ?? 'Daily Bread Learning Center Inc.'; ?>">
+                        <input type="text" name="school_name" value="<?php echo htmlspecialchars($settings['school_name']); ?>">
                     </div>
                     <div class="form-group">
                         <label>School Year</label>
-                        <input type="text" name="school_year" value="<?php echo $settings['school_year'] ?? '2026-2027'; ?>">
+                        <input type="text" name="school_year" value="<?php echo htmlspecialchars($settings['school_year']); ?>">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>School Address</label>
-                    <input type="text" name="school_address" value="<?php echo $settings['school_address'] ?? ''; ?>">
+                    <input type="text" name="school_address" value="<?php echo htmlspecialchars($settings['school_address']); ?>">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="text" name="school_phone" value="<?php echo $settings['school_phone'] ?? ''; ?>">
+                        <input type="text" name="school_phone" value="<?php echo htmlspecialchars($settings['school_phone']); ?>">
                     </div>
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" name="school_email" value="<?php echo $settings['school_email'] ?? ''; ?>">
+                        <input type="email" name="school_email" value="<?php echo htmlspecialchars($settings['school_email']); ?>">
                     </div>
                 </div>
             </div>
@@ -129,25 +163,25 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 <div class="form-row">
                     <div class="form-group">
                         <label>GCash Number</label>
-                        <input type="text" name="gcash_number" value="<?php echo $settings['gcash_number'] ?? ''; ?>">
+                        <input type="text" name="gcash_number" value="<?php echo htmlspecialchars($settings['gcash_number']); ?>">
                     </div>
                     <div class="form-group">
                         <label>GCash Account Name</label>
-                        <input type="text" name="gcash_name" value="<?php echo $settings['gcash_name'] ?? ''; ?>">
+                        <input type="text" name="gcash_name" value="<?php echo htmlspecialchars($settings['gcash_name']); ?>">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Bank Name</label>
-                        <input type="text" name="bank_name" value="<?php echo $settings['bank_name'] ?? ''; ?>">
+                        <input type="text" name="bank_name" value="<?php echo htmlspecialchars($settings['bank_name']); ?>">
                     </div>
                     <div class="form-group">
                         <label>Bank Account Number</label>
-                        <input type="text" name="bank_account" value="<?php echo $settings['bank_account'] ?? ''; ?>">
+                        <input type="text" name="bank_account" value="<?php echo htmlspecialchars($settings['bank_account']); ?>">
                     </div>
                     <div class="form-group">
                         <label>Bank Account Name</label>
-                        <input type="text" name="bank_account_name" value="<?php echo $settings['bank_account_name'] ?? ''; ?>">
+                        <input type="text" name="bank_account_name" value="<?php echo htmlspecialchars($settings['bank_account_name']); ?>">
                     </div>
                 </div>
             </div>
@@ -157,16 +191,16 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 <h3>📚 Tuition Fees</h3>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Nursery Fee</label>
-                        <input type="number" name="enrollment_fee_nursery" value="<?php echo $settings['enrollment_fee_nursery'] ?? '17500'; ?>">
+                        <label>Nursery Fee (₱)</label>
+                        <input type="number" name="enrollment_fee_nursery" value="<?php echo $settings['enrollment_fee_nursery']; ?>">
                     </div>
                     <div class="form-group">
-                        <label>Kindergarten 1 Fee</label>
-                        <input type="number" name="enrollment_fee_k1" value="<?php echo $settings['enrollment_fee_k1'] ?? '18300'; ?>">
+                        <label>Kindergarten 1 Fee (₱)</label>
+                        <input type="number" name="enrollment_fee_k1" value="<?php echo $settings['enrollment_fee_k1']; ?>">
                     </div>
                     <div class="form-group">
-                        <label>Kindergarten 2 Fee</label>
-                        <input type="number" name="enrollment_fee_k2" value="<?php echo $settings['enrollment_fee_k2'] ?? '18300'; ?>">
+                        <label>Kindergarten 2 Fee (₱)</label>
+                        <input type="number" name="enrollment_fee_k2" value="<?php echo $settings['enrollment_fee_k2']; ?>">
                     </div>
                 </div>
             </div>
@@ -178,16 +212,16 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     <div class="form-group">
                         <label>Auto Backup Schedule</label>
                         <select name="backup_auto_schedule">
-                            <option value="daily" <?php echo ($settings['backup_auto_schedule'] ?? '') == 'daily' ? 'selected' : ''; ?>>Daily</option>
-                            <option value="weekly" <?php echo ($settings['backup_auto_schedule'] ?? '') == 'weekly' ? 'selected' : ''; ?>>Weekly</option>
-                            <option value="monthly" <?php echo ($settings['backup_auto_schedule'] ?? '') == 'monthly' ? 'selected' : ''; ?>>Monthly</option>
+                            <option value="daily" <?php echo $settings['backup_auto_schedule'] == 'daily' ? 'selected' : ''; ?>>Daily</option>
+                            <option value="weekly" <?php echo $settings['backup_auto_schedule'] == 'weekly' ? 'selected' : ''; ?>>Weekly</option>
+                            <option value="monthly" <?php echo $settings['backup_auto_schedule'] == 'monthly' ? 'selected' : ''; ?>>Monthly</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Maintenance Mode</label>
                         <select name="maintenance_mode">
-                            <option value="0" <?php echo ($settings['maintenance_mode'] ?? '0') == '0' ? 'selected' : ''; ?>>Disabled</option>
-                            <option value="1" <?php echo ($settings['maintenance_mode'] ?? '0') == '1' ? 'selected' : ''; ?>>Enabled</option>
+                            <option value="0" <?php echo $settings['maintenance_mode'] == '0' ? 'selected' : ''; ?>>Disabled</option>
+                            <option value="1" <?php echo $settings['maintenance_mode'] == '1' ? 'selected' : ''; ?>>Enabled</option>
                         </select>
                     </div>
                 </div>
@@ -199,7 +233,7 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     </div>
     
     <div class="footer">
-        <p>© Daily Bread Learning Center Inc. — System Administration</p>
+        <p>© Daily Bread Learning Center Inc. — System Administration | Changes apply immediately</p>
     </div>
 </div>
 </body>

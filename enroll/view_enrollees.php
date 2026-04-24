@@ -69,7 +69,6 @@ $enrollees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="container">
         <div class="page-header">
             <h2>Enrolled Students</h2>
-            <a href="welcome.php" class="back-btn">← Back to Home</a>
         </div>
         
         <p style="margin-bottom: 15px; color: #666;">Total Enrolled: <?php echo count($enrollees); ?> students</p>

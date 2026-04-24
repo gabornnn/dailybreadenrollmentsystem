@@ -25,33 +25,46 @@ if(isset($_POST['submit_payment'])) {
     $payment_reference = generateReferenceNumber();
     $notes = $_POST['notes'];
     
-    // Handle screenshot upload
+    // Allowed file types and size
+    $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+    $max_size = 5 * 1024 * 1024; // 5MB
+    
     $screenshot_path = '';
     if(isset($_FILES['payment_proof']) && $_FILES['payment_proof']['error'] == 0) {
-        $target_dir = "uploads/payment_proofs/";
-        if(!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
+        $file_type = mime_content_type($_FILES['payment_proof']['tmp_name']);
+        $file_size = $_FILES['payment_proof']['size'];
+        
+        if(!in_array($file_type, $allowed_types)) {
+            $error = "Only JPG, PNG, and PDF files are allowed!";
+        } elseif($file_size > $max_size) {
+            $error = "File size must be less than 5MB!";
+        } else {
+            $target_dir = "uploads/payment_proofs/";
+            if(!is_dir($target_dir)) {
+                mkdir($target_dir, 0777, true);
+            }
+            $file_extension = pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION);
+            $screenshot_path = $target_dir . "payment_" . $student_id . "_" . time() . "." . $file_extension;
+            move_uploaded_file($_FILES['payment_proof']['tmp_name'], $screenshot_path);
         }
-        $file_extension = pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION);
-        $screenshot_path = $target_dir . "payment_" . $student_id . "_" . time() . "." . $file_extension;
-        move_uploaded_file($_FILES['payment_proof']['tmp_name'], $screenshot_path);
+    } else {
+        $error = "Please upload a payment proof/screenshot.";
     }
     
-    // Insert pending payment transaction
-    $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, payment_method, payment_reference, notes, processed_by, payment_verified, receipt_path) VALUES (?, CURDATE(), ?, 'Online Payment', ?, ?, ?, 'System', 0, ?)");
-    
-    if($stmt->execute([$student_id, $payment_amount, $payment_method, $payment_reference, $notes, $screenshot_path])) {
-        $success = "Payment reference generated! Please complete the payment using the instructions below.";
-        $payment_completed = true;
+    if(empty($error)) {
+        // Insert pending payment transaction
+        $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, payment_method, payment_reference, notes, processed_by, payment_verified, receipt_path) VALUES (?, CURDATE(), ?, 'Online Payment', ?, ?, ?, 'System', 0, ?)");
         
-        // Redirect after 5 seconds to show success message
-        echo '<meta http-equiv="refresh" content="5;url=online_payment.php?completed=1">';
-    } else {
-        $error = "Failed to process payment. Please try again.";
+        if($stmt->execute([$student_id, $payment_amount, $payment_method, $payment_reference, $notes, $screenshot_path])) {
+            $success = "Payment reference generated! Please complete the payment using the instructions below.";
+            $payment_completed = true;
+        } else {
+            $error = "Failed to process payment. Please try again.";
+        }
     }
 }
 
-// Get system settings for payment info
+// Get system settings
 $gcash_number = getSetting($pdo, 'gcash_number') ?: '0923-4701532';
 $gcash_name = getSetting($pdo, 'gcash_name') ?: 'Daily Bread Learning Center';
 $bank_name = getSetting($pdo, 'bank_name') ?: 'Bank of the Philippine Islands (BPI)';
@@ -118,16 +131,15 @@ $bank_account_name = getSetting($pdo, 'bank_account_name') ?: 'Daily Bread Learn
 <div class="container">
     <div class="header">
         <h2>💳 Online Payment Portal</h2>
-        <a href="welcome.php" class="home-btn"> Back to Home</a>
+        <a href="welcome.php" class="home-btn">Back to Home</a>
     </div>
     
     <?php if($payment_completed): ?>
-        <!-- Payment Completed Success Message -->
         <div class="payment-completed">
             <div class="checkmark">✓</div>
             <h2>Payment Reference Generated!</h2>
-            <p>Your payment reference has been created.</p>
-            <p><strong>Please complete your payment using the instructions below.</strong></p>
+            <p>Your payment reference number: <strong><?php echo $payment_reference ?? 'N/A'; ?></strong></p>
+            <p>Please complete your payment using the instructions below.</p>
             <p>After payment, our cashier will verify your transaction within 24 hours.</p>
             <a href="welcome.php" class="btn-home">Return to Homepage</a>
         </div>
@@ -157,8 +169,8 @@ $bank_account_name = getSetting($pdo, 'bank_account_name') ?: 'Daily Bread Learn
                 <input type="hidden" name="payment_method" value="<?php echo $payment_method; ?>">
                 
                 <div class="form-group">
-                    <label>Student Name (Optional)</label>
-                    <input type="text" name="student_name" placeholder="Enter student name if known">
+                    <label>Student Name </label>
+                    <input type="text" name="student_name" placeholder="Enter student name">
                 </div>
                 
                 <div class="form-group">
@@ -168,8 +180,8 @@ $bank_account_name = getSetting($pdo, 'bank_account_name') ?: 'Daily Bread Learn
                 
                 <div class="form-group">
                     <label>Upload Payment Proof/Screenshot *</label>
-                    <input type="file" name="payment_proof" accept="image/*,.pdf" required>
-                    <small style="color: #666;">Upload screenshot of GCash transaction or bank transfer receipt (JPG, PNG, PDF)</small>
+                    <input type="file" name="payment_proof" accept="image/jpeg,image/png,application/pdf" required>
+                    <small style="color: #666;">Accepted formats: JPG, PNG, PDF (Max 5MB)</small>
                 </div>
                 
                 <div class="form-group">
@@ -189,7 +201,6 @@ $bank_account_name = getSetting($pdo, 'bank_account_name') ?: 'Daily Bread Learn
                     <h4>📱 GCash Payment</h4>
                     <p><strong>GCash Number:</strong> <?php echo $gcash_number; ?></p>
                     <p><strong>Account Name:</strong> <?php echo $gcash_name; ?></p>
-                    
                     <p><strong>Steps:</strong></p>
                     <ol style="margin-left: 20px; margin-top: 10px;">
                         <li>Open GCash App</li>
@@ -236,6 +247,7 @@ $bank_account_name = getSetting($pdo, 'bank_account_name') ?: 'Daily Bread Learn
             
             <div class="instruction-box" style="background: #fff3cd; margin-top: 15px;">
                 <h4>⚠️ Important Notes</h4>
+                <p>• Only JPG, PNG, and PDF files are accepted for payment proof (Max 5MB)</p>
                 <p>• Payment will be verified by our cashier within 24 hours</p>
                 <p>• Please keep your reference number for verification</p>
                 <p>• For concerns, contact us at 0923-4701532</p>

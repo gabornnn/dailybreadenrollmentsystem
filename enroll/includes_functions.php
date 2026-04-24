@@ -24,10 +24,14 @@ function validateDate($date, $format = 'Y-m-d') {
 }
 
 /**
- * Generate unique reference number
+ * Generate alphanumeric reference number (Panelist Request)
+ * Format: DB2026-A1B2C3
  */
 function generateReferenceNumber() {
-    return 'PAY-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+    $prefix = 'DB';
+    $year = date('Y');
+    $random = strtoupper(substr(uniqid(), -6));
+    return $prefix . $year . '-' . $random;
 }
 
 /**
@@ -120,5 +124,118 @@ function createBackup($pdo, $backup_path = 'backups/') {
     
     file_put_contents($filename, $output);
     return $filename;
+}
+/**
+ * Validate Philippine mobile number
+ */
+function isValidPhoneNumber($phone) {
+    $pattern = '/^(09|\+639)\d{9}$/';
+    return preg_match($pattern, $phone);
+}
+
+/**
+ * Format currency
+ */
+function formatCurrency($amount) {
+    return '₱' . number_format($amount, 2);
+}
+
+/**
+ * Get student full name
+ */
+function getStudentFullName($student) {
+    return htmlspecialchars($student['first_name'] . ' ' . $student['middle_name'] . ' ' . $student['last_name']);
+}
+
+/**
+ * Get all system settings as array
+ */
+function getAllSettings($pdo) {
+    $settings = [];
+    $stmt = $pdo->query("SELECT setting_key, setting_value FROM system_settings");
+    while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+    return $settings;
+}
+
+/**
+ * Validate file upload (type and size)
+ */
+function validatePaymentProof($file) {
+    $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+    $max_size = 5 * 1024 * 1024; // 5MB
+    
+    if($file['error'] !== UPLOAD_ERR_OK) {
+        return ['valid' => false, 'error' => 'File upload failed'];
+    }
+    
+    $file_type = mime_content_type($file['tmp_name']);
+    $file_size = $file['size'];
+    
+    if(!in_array($file_type, $allowed_types)) {
+        return ['valid' => false, 'error' => 'Only JPG, PNG, and PDF files are allowed'];
+    }
+    
+    if($file_size > $max_size) {
+        return ['valid' => false, 'error' => 'File size must be less than 5MB'];
+    }
+    
+    return ['valid' => true, 'error' => null];
+}
+
+/**
+ * Upload payment proof
+ */
+function uploadPaymentProof($file, $student_id) {
+    $target_dir = "uploads/payment_proofs/";
+    if(!is_dir($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+    
+    $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = "payment_" . $student_id . "_" . time() . "." . $file_extension;
+    $filepath = $target_dir . $filename;
+    
+    if(move_uploaded_file($file['tmp_name'], $filepath)) {
+        return $filepath;
+    }
+    
+    return false;
+}
+
+/**
+ * Auto-archive student when dropped
+ */
+function autoArchiveOnDrop($pdo, $enrollee_id, $reason) {
+    $stmt = $pdo->prepare("UPDATE enrollees SET is_archived = 1, archived_date = CURDATE(), archive_reason = ?, enrollment_status = 'Dropped' WHERE enrollee_id = ?");
+    return $stmt->execute([$reason, $enrollee_id]);
+}
+
+/**
+ * Restore archived student
+ */
+function restoreArchivedStudent($pdo, $enrollee_id) {
+    $stmt = $pdo->prepare("UPDATE enrollees SET is_archived = 0, archived_date = NULL, archive_reason = NULL, enrollment_status = 'Pending' WHERE enrollee_id = ?");
+    return $stmt->execute([$enrollee_id]);
+}
+
+/**
+ * Filter students by reason (for archive page)
+ */
+function getArchivedByReason($pdo, $reason = null) {
+    $sql = "SELECT * FROM enrollees WHERE is_archived = 1";
+    if($reason) {
+        $sql .= " AND archive_reason = :reason";
+    }
+    $sql .= " ORDER BY archived_date DESC";
+    
+    $stmt = $pdo->prepare($sql);
+    if($reason) {
+        $stmt->execute(['reason' => $reason]);
+    } else {
+        $stmt->execute();
+    }
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>

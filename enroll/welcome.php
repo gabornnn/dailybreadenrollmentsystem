@@ -1,9 +1,25 @@
+<?php
+require_once 'db_connection.php';
+require_once 'includes_functions.php';
+
+// Get all settings from database
+$school_name = getSetting($pdo, 'school_name') ?: 'Daily Bread Learning Center Inc.';
+$school_year = getSetting($pdo, 'school_year') ?: '2026-2027';
+$school_address = getSetting($pdo, 'school_address') ?: 'Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City';
+$school_phone = getSetting($pdo, 'school_phone') ?: '0923-4701532';
+$school_email = getSetting($pdo, 'school_email') ?: 'info@dailybread.edu.ph';
+
+// Get tuition fees from system settings
+$nursery_fee = getSetting($pdo, 'enrollment_fee_nursery') ?: 17500;
+$k1_fee = getSetting($pdo, 'enrollment_fee_k1') ?: 18300;
+$k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Bread Learning Center | Christian Preschool in Kalookan City</title>
+    <title><?php echo htmlspecialchars($school_name); ?> | Christian Preschool in Kalookan City</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link rel="shortcut icon" href="images/logo.png">
     <style>
@@ -19,7 +35,6 @@
             line-height: 1.6;
         }
 
-        /* Header */
         .header {
             background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -79,7 +94,6 @@
             color: #e74c3c;
         }
 
-        /* Hero Section */
         .hero {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
@@ -113,15 +127,12 @@
             border-radius: 30px;
             font-weight: 600;
             transition: background 0.3s;
-            border: none;
-            cursor: pointer;
         }
 
         .btn-primary:hover {
             background: #c0392b;
         }
 
-        /* Section Styles */
         .section {
             padding: 80px 30px;
             max-width: 1200px;
@@ -142,7 +153,6 @@
             font-size: 18px;
         }
 
-        /* About Section */
         .about-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -175,7 +185,6 @@
             opacity: 1;
         }
 
-        /* Program Cards */
         .programs-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -230,7 +239,6 @@
             color: white;
         }
 
-        /* Portal Buttons Section */
         .portals-section {
             background: #f5f6fa;
             padding: 60px 30px;
@@ -258,7 +266,6 @@
             border-radius: 10px;
             transition: all 0.3s;
             border: 1px solid #e0e0e0;
-            cursor: pointer;
             flex: 1;
             min-width: 200px;
         }
@@ -279,14 +286,14 @@
             color: #7f8c8d;
         }
 
+        .portal-btn.enroll h3 { color: #27ae60; }
         .portal-btn.admin h3 { color: #e74c3c; }
         .portal-btn.registrar h3 { color: #3498db; }
         .portal-btn.cashier h3 { color: #f39c12; }
-        .portal-btn.enroll h3 { color: #27ae60; }
         .portal-btn.view h3 { color: #9b59b6; }
         .portal-btn.tuition h3 { color: #1abc9c; }
+        .portal-btn.payment h3 { color: #f39c12; }
 
-        /* Footer */
         .footer {
             background: #2c3e50;
             color: white;
@@ -352,13 +359,12 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
         <div class="nav-container">
             <div class="logo">
                 <img src="images/logo.png" alt="Daily Bread Learning Center Logo">
                 <div class="logo-text">
-                    <h1>DAILY BREAD</h1>
+                    <h1><?php echo htmlspecialchars($school_name); ?></h1>
                     <p>LEARNING CENTER INC.</p>
                 </div>
             </div>
@@ -372,14 +378,12 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
     <section id="home" class="hero">
         <h2>Child-Driven Learning in a <span>Joyful Environment</span></h2>
         <p>A preschool where children are encouraged to be curious, explore their world, and develop a love for learning in a Christ-centered environment.</p>
         <a href="index.php" class="btn-primary">Apply Online</a>
     </section>
 
-    <!-- About Section -->
     <section id="about" class="section">
         <h2 class="section-title">About Daily Bread</h2>
         <p class="section-subtitle">Nurturing young minds since 2010</p>
@@ -395,62 +399,34 @@
         </div>
     </section>
 
-    <!-- Mission & Vision Section -->
-    <section class="section" style="background: #f5f6fa;">
-        <div style="max-width: 1000px; margin: 0 auto;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
-                
-                <!-- Vision Card -->
-                <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 20px;"></div>
-                    <h3 style="color: #2c3e50; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #e74c3c; display: inline-block; padding-bottom: 10px;">Vision</h3>
-                    <p style="color: #555; line-height: 1.8; margin-top: 20px; font-size: 16px;">
-                        The Vision for the early learning program is to provide early childhood education for preschool-aged children in a joyful, nurturing and a safe environment.
-                    </p>
-                </div>
-                
-                <!-- Mission Card -->
-                <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 20px;"></div>
-                    <h3 style="color: #2c3e50; font-size: 28px; margin-bottom: 20px; border-bottom: 3px solid #27ae60; display: inline-block; padding-bottom: 10px;">Mission</h3>
-                    <p style="color: #555; line-height: 1.8; margin-top: 20px; font-size: 16px;">
-                        The Mission is to provide a preschool for each child to be a lifelong Learner, to prepare each child to become independent, to maximize readiness for ongoing school experiences, and to promote family-centered education.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Programs Section -->
-    <section id="programs" class="section">
+    <section id="programs" class="section" style="background: #f5f6fa;">
         <h2 class="section-title">Our Programs</h2>
         <p class="section-subtitle">Developmentally appropriate curriculum for every stage</p>
         <div class="programs-grid">
             <div class="program-card">
                 <h3>Nursery</h3>
                 <p>Ages 3-4 years</p>
-                <div class="price">PHP 17,500</div>
+                <div class="price">PHP <?php echo number_format($nursery_fee, 0); ?></div>
                 <p>Full school year including registration, tuition, and miscellaneous fees</p>
                 <a href="index.php" class="btn-outline">Enroll Now</a>
             </div>
             <div class="program-card">
                 <h3>Kindergarten 1</h3>
                 <p>Ages 4-5 years</p>
-                <div class="price">PHP 18,300</div>
+                <div class="price">PHP <?php echo number_format($k1_fee, 0); ?></div>
                 <p>Full school year including registration, tuition, and miscellaneous fees</p>
                 <a href="index.php" class="btn-outline">Enroll Now</a>
             </div>
             <div class="program-card">
                 <h3>Kindergarten 2</h3>
                 <p>Ages 5-6 years</p>
-                <div class="price">PHP 18,300</div>
+                <div class="price">PHP <?php echo number_format($k2_fee, 0); ?></div>
                 <p>Full school year including registration, tuition, and miscellaneous fees</p>
                 <a href="index.php" class="btn-outline">Enroll Now</a>
             </div>
         </div>
     </section>
 
-    <!-- Portal Buttons Section -->
     <section id="portals" class="portals-section">
         <div class="portals-container">
             <h2 class="section-title">Portal Access</h2>
@@ -485,50 +461,54 @@
                     <p>View fee structure and payment schedules</p>
                 </a>
             </div>
+            
+            <div class="portals-row">
+                <a href="online_payment.php" class="portal-btn payment">
+                    <h3>💳 Pay Online</h3>
+                    <p>GCash, Bank Transfer, Over the Counter</p>
+                </a>
+            </div>
         </div>
     </section>
 
-    <!-- Contact Section -->
     <section id="contact" class="section" style="background: #f5f6fa;">
         <h2 class="section-title">Contact Us</h2>
         <p class="section-subtitle">Visit us or get in touch</p>
         
         <div style="text-align: center; max-width: 500px; margin: 0 auto;">
             <img src="images/logo.png" alt="Logo" style="height: 60px; margin-bottom: 20px;">
-            <h3 style="color: #2c3e50; margin-bottom: 20px;">Daily Bread Learning Center Inc.</h3>
-            <p>Block 1, Lot 17 Palmera Springs 38<br>Camarin, Kalookan City</p>
-            <p><strong>Phone:</strong> 0923-4701532</p>
-            <p><strong>Email:</strong> info@dailybread.edu.ph</p>
+            <h3 style="color: #2c3e50; margin-bottom: 20px;"><?php echo htmlspecialchars($school_name); ?></h3>
+            <p><?php echo htmlspecialchars($school_address); ?></p>
+            <p><strong>Phone:</strong> <?php echo htmlspecialchars($school_phone); ?></p>
+            <p><strong>Email:</strong> <?php echo htmlspecialchars($school_email); ?></p>
             <p><strong>Office Hours:</strong> Monday to Friday, 8:00 AM - 4:00 PM</p>
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-col">
                 <img src="images/logo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;">
-                <h4>Daily Bread Learning Center</h4>
-                <p>Block 1, Lot 17 Palmera Springs 38</p>
-                <p>Camarin, Kalookan City</p>
-                <p>0923-4701532</p>
+                <h4><?php echo htmlspecialchars($school_name); ?></h4>
+                <p><?php echo htmlspecialchars($school_address); ?></p>
+                <p><?php echo htmlspecialchars($school_phone); ?></p>
             </div>
             <div class="footer-col">
                 <h4>Quick Links</h4>
                 <a href="index.php">Enrollment Form</a>
                 <a href="view_enrollees.php">Enrolled Students</a>
                 <a href="tuition_fees.php">Tuition and Fees</a>
+                <a href="online_payment.php">Pay Online</a>
+            </div>
+            <div class="footer-col">
+                <h4>Staff Portals</h4>
                 <a href="login.php?role=admin">Admin Portal</a>
                 <a href="login.php?role=registrar">Registrar Portal</a>
                 <a href="login.php?role=cashier">Cashier Portal</a>
             </div>
-            <div class="footer-col">
-                <h4>Follow Us</h4>
-                <a href="https://www.facebook.com/dailybreadlearningcenterinc">Facebook</a>
-            </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 Daily Bread Learning Center Inc. Preschool Department - Academy Year 2026-2027. All rights reserved.</p>
+            <p>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars($school_name); ?> — All rights reserved.</p>
         </div>
     </footer>
 </body>

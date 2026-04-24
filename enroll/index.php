@@ -2,6 +2,12 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 require_once 'db_connection.php';
+require_once 'includes_functions.php';
+
+// Get tuition fees from system settings
+$nursery_fee = getSetting($pdo, 'enrollment_fee_nursery') ?: 17500;
+$k1_fee = getSetting($pdo, 'enrollment_fee_k1') ?: 18300;
+$k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
 
 $success = '';
 $error = '';
@@ -12,11 +18,26 @@ if(isset($_POST['enroll_student'])) {
     $program_level = $_POST['program_level'];
     $payment_plan = $_POST['payment_plan'];
     
-    // Set payment amounts based on program and plan
+    // Set payment amounts based on program and plan (using dynamic fees)
     $payment_amounts = [
-        'NURSERY' => ['Cash (Full)' => 17500, 'Semi Annual' => 8900, 'Quarterly' => 6600, 'Monthly' => 5250],
-        'KINDERGARTEN 1' => ['Cash (Full)' => 18300, 'Semi Annual' => 9400, 'Quarterly' => 7050, 'Monthly' => 5700],
-        'KINDERGARTEN 2' => ['Cash (Full)' => 18300, 'Semi Annual' => 10100, 'Quarterly' => 7550, 'Monthly' => 6200]
+        'NURSERY' => [
+            'Cash (Full)' => $nursery_fee,
+            'Semi Annual' => round($nursery_fee * 0.5),
+            'Quarterly' => round($nursery_fee * 0.35),
+            'Monthly' => round($nursery_fee * 0.25)
+        ],
+        'KINDERGARTEN 1' => [
+            'Cash (Full)' => $k1_fee,
+            'Semi Annual' => round($k1_fee * 0.5),
+            'Quarterly' => round($k1_fee * 0.35),
+            'Monthly' => round($k1_fee * 0.25)
+        ],
+        'KINDERGARTEN 2' => [
+            'Cash (Full)' => $k2_fee,
+            'Semi Annual' => round($k2_fee * 0.5),
+            'Quarterly' => round($k2_fee * 0.35),
+            'Monthly' => round($k2_fee * 0.25)
+        ]
     ];
     
     $payment_amount = $payment_amounts[$program_level][$payment_plan];
@@ -410,10 +431,29 @@ if(isset($_POST['enroll_student'])) {
             const program = document.getElementById('program_level').value;
             const plan = document.getElementById('payment_plan').value;
             
+            const nurseryFee = <?php echo $nursery_fee; ?>;
+            const k1Fee = <?php echo $k1_fee; ?>;
+            const k2Fee = <?php echo $k2_fee; ?>;
+            
             const amounts = {
-                'NURSERY': {'Cash (Full)': 17500, 'Semi Annual': 8900, 'Quarterly': 6600, 'Monthly': 5250},
-                'KINDERGARTEN 1': {'Cash (Full)': 18300, 'Semi Annual': 9400, 'Quarterly': 7050, 'Monthly': 5700},
-                'KINDERGARTEN 2': {'Cash (Full)': 18300, 'Semi Annual': 10100, 'Quarterly': 7550, 'Monthly': 6200}
+                'NURSERY': {
+                    'Cash (Full)': nurseryFee,
+                    'Semi Annual': Math.round(nurseryFee * 0.5),
+                    'Quarterly': Math.round(nurseryFee * 0.35),
+                    'Monthly': Math.round(nurseryFee * 0.25)
+                },
+                'KINDERGARTEN 1': {
+                    'Cash (Full)': k1Fee,
+                    'Semi Annual': Math.round(k1Fee * 0.5),
+                    'Quarterly': Math.round(k1Fee * 0.35),
+                    'Monthly': Math.round(k1Fee * 0.25)
+                },
+                'KINDERGARTEN 2': {
+                    'Cash (Full)': k2Fee,
+                    'Semi Annual': Math.round(k2Fee * 0.5),
+                    'Quarterly': Math.round(k2Fee * 0.35),
+                    'Monthly': Math.round(k2Fee * 0.25)
+                }
             };
             
             if (amounts[program] && amounts[program][plan]) {
@@ -423,6 +463,8 @@ if(isset($_POST['enroll_student'])) {
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            updatePaymentAmount();
+            
             var form = document.querySelector('form');
             if (form) {
                 form.addEventListener('submit', function(e) {
@@ -441,7 +483,7 @@ if(isset($_POST['enroll_student'])) {
         <img src="images/logo.png" alt="Logo">
         <h1>DAILY BREAD LEARNING CENTER INC.</h1>
         <p>Block 1, Lot 17 Palmera Springs 38, Camarin, Kalookan City | 0923-4701532</p>
-        <p>Preschool Department - Academy Year 2026-2027</p>
+        <p>Preschool Department - Academy Year <?php echo date('Y') . '-' . (date('Y')+1); ?></p>
     </div>
     
     <div class="nav">
@@ -449,7 +491,7 @@ if(isset($_POST['enroll_student'])) {
         <a href="index.php" class="active">Registration Form</a>
         <a href="view_enrollees.php">Enrolled Students</a>
         <a href="tuition_fees.php">Tuition and Fees</a>
-         <a href="online_payment.php">💳 Pay Online</a>
+        <a href="online_payment.php">💳 Pay Online</a>
         <a href="welcome.php#portals">Staff Portals</a>
     </div>
     
@@ -496,8 +538,8 @@ if(isset($_POST['enroll_student'])) {
                     </div>
                     <div class="form-group">
                         <label>Total Payment Amount</label>
-                        <input type="text" id="payment_amount_display" value="₱18,300" readonly style="background:#f0f0f0; font-weight:bold; font-size:16px;">
-                        <input type="hidden" name="payment_amount" id="payment_amount_hidden" value="18300">
+                        <input type="text" id="payment_amount_display" value="₱<?php echo number_format($k1_fee, 0); ?>" readonly style="background:#f0f0f0; font-weight:bold; font-size:16px;">
+                        <input type="hidden" name="payment_amount" id="payment_amount_hidden" value="<?php echo $k1_fee; ?>">
                     </div>
                 </div>
             </div>
