@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db_connection.php';
+require_once 'includes_functions.php';
 
 if(!isset($_SESSION['user_type']) && !isset($_SESSION['role'])) {
     header("Location: login.php");
@@ -64,6 +65,9 @@ foreach($payments as $payment) {
     }
 }
 $net_paid = $total_paid - $total_refunded;
+
+// Check if student is Kindergarten 2
+$is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -83,7 +87,6 @@ $net_paid = $total_paid - $total_refunded;
         .back-btn { background: #3498db; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; }
         .back-btn:hover { background: #2980b9; }
         
-        /* Tab Navigation */
         .nav-tabs { background: #34495e; display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 20px 0 20px; }
         .tab-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px 5px 0 0; transition: background 0.3s; }
         .tab-btn:hover { background: #1abc9c; }
@@ -127,7 +130,6 @@ $net_paid = $total_paid - $total_refunded;
         <a href="admin_dashboard.php" class="back-btn">← Back to Dashboard</a>
     </div>
     
-    <!-- Tab Navigation -->
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="showTab('info')">📋 Student Info</button>
         <button class="tab-btn" onclick="showTab('status')">📊 Status</button>
@@ -137,7 +139,6 @@ $net_paid = $total_paid - $total_refunded;
         <button class="tab-btn" onclick="showTab('consent')">⚠️ Emergency Consent</button>
     </div>
     
-    <!-- Tab 1: Student Information -->
     <div id="tab-info" class="tab-content active">
         <div class="info-row"><div class="label">Student ID:</div><div class="value"><?php echo $student['enrollee_id']; ?></div></div>
         <div class="info-row"><div class="label">Student Type:</div><div class="value"><?php echo $student['student_type']; ?></div></div>
@@ -152,7 +153,6 @@ $net_paid = $total_paid - $total_refunded;
         <div class="info-row"><div class="label">Enrolled On:</div><div class="value"><?php echo date('F d, Y h:i A', strtotime($student['created_at'])); ?></div></div>
     </div>
     
-    <!-- Tab 2: Status Information -->
     <div id="tab-status" class="tab-content">
         <div class="info-row"><div class="label">Enrollment Status:</div><div class="value"><span class="badge <?php echo strtolower($student['enrollment_status']); ?>"><?php echo $student['enrollment_status']; ?></span></div></div>
         <div class="info-row"><div class="label">Qualification Status:</div><div class="value"><span class="badge <?php echo strtolower(str_replace(' ', '', $student['qualification_status'])); ?>"><?php echo $student['qualification_status']; ?></span></div></div>
@@ -166,7 +166,6 @@ $net_paid = $total_paid - $total_refunded;
         <?php endif; ?>
     </div>
     
-    <!-- Tab 3: Parents & Siblings -->
     <div id="tab-parents" class="tab-content">
         <?php if($mother): ?>
         <h3 style="margin-bottom: 15px;">Mother's Information</h3>
@@ -193,10 +192,9 @@ $net_paid = $total_paid - $total_refunded;
         <?php endif; ?>
     </div>
     
-    <!-- Tab 4: Payment History -->
     <div id="tab-payment" class="tab-content">
         <?php if(count($payments) > 0): ?>
-        <table>
+        </table>
             <thead><tr><th>Date</th><th>Receipt #</th><th>Type</th><th>Amount</th><th>Refund</th><th>Processed By</th></tr></thead>
             <tbody>
                 <?php foreach($payments as $payment): ?>
@@ -216,18 +214,19 @@ $net_paid = $total_paid - $total_refunded;
         <?php endif; ?>
     </div>
     
-    <!-- Tab 5: Documents -->
     <div id="tab-documents" class="tab-content">
         <?php if($documents): ?>
             <div class="info-row"><div class="label">Birth Certificate:</div><div class="value"><?php echo $documents['birth_certificate_path'] ? '<a href="'.$documents['birth_certificate_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
             <div class="info-row"><div class="label">2x2 ID Picture:</div><div class="value"><?php echo $documents['id_picture_path'] ? '<a href="'.$documents['id_picture_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
             <div class="info-row"><div class="label">Report Card:</div><div class="value"><?php echo $documents['report_card_path'] ? '<a href="'.$documents['report_card_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
+            <?php if($is_kinder2): ?>
+            <div class="info-row"><div class="label">Proof of Certification:</div><div class="value"><?php echo ($documents['proof_certification_path'] ?? '') ? '<a href="'.$documents['proof_certification_path'].'" target="_blank">View File</a>' : 'Not uploaded (Required for Kinder 2)'; ?></div></div>
+            <?php endif; ?>
         <?php else: ?>
             <p>No documents uploaded yet.</p>
         <?php endif; ?>
     </div>
     
-    <!-- Tab 6: Emergency Consent -->
     <div id="tab-consent" class="tab-content">
         <?php if($consent): ?>
             <div class="info-row"><div class="label">Parent/Guardian Signature:</div><div class="value"><?php echo htmlspecialchars($consent['parent_guardian_signature']); ?></div></div>

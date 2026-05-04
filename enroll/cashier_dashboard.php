@@ -29,10 +29,8 @@ if(isset($_POST['update_payment'])) {
     $enrollee_id = $_POST['enrollee_id'];
     $payment_amount = $_POST['payment_amount'];
     
-    // Auto-generate receipt number
     $receipt_number = generateReceiptNumber($pdo);
     
-    // Get current totals
     $stmt = $pdo->prepare("
         SELECT e.payment_amount as total_fee,
                COALESCE(SUM(CASE WHEN pt.payment_type = 'Payment' THEN pt.payment_amount ELSE 0 END), 0) as total_paid,
@@ -51,7 +49,6 @@ if(isset($_POST['update_payment'])) {
     $net_paid = $total_paid - $total_refunded;
     $new_net_paid = $net_paid + $payment_amount;
     
-    // Determine payment status
     if($new_net_paid >= $total_fee) {
         $payment_status = 'Fully Paid';
     } elseif($new_net_paid > 0) {
@@ -60,62 +57,13 @@ if(isset($_POST['update_payment'])) {
         $payment_status = 'Unpaid';
     }
     
-    // Update enrollee payment status
     $stmt = $pdo->prepare("UPDATE enrollees SET payment_status = ? WHERE enrollee_id = ?");
     $stmt->execute([$payment_status, $enrollee_id]);
     
-    // Record transaction
     $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, receipt_number, processed_by, processed_by_user_id, payment_status) VALUES (?, CURDATE(), ?, 'Payment', ?, ?, ?, ?)");
     $stmt->execute([$enrollee_id, $payment_amount, $receipt_number, $_SESSION['full_name'], $_SESSION['user_id'], $payment_status]);
     
     header("Location: cashier_dashboard.php?success=Payment of ₱" . number_format($payment_amount, 2) . " recorded! Receipt: $receipt_number");
-    exit();
-}
-
-// Handle refund
-if(isset($_POST['process_refund'])) {
-    $enrollee_id = $_POST['enrollee_id'];
-    $refund_amount = $_POST['refund_amount'];
-    $refund_reason = $_POST['refund_reason'];
-    $receipt_number = generateReceiptNumber($pdo);
-    
-    // Get current totals
-    $stmt = $pdo->prepare("
-        SELECT e.payment_amount as total_fee,
-               COALESCE(SUM(CASE WHEN pt.payment_type = 'Payment' THEN pt.payment_amount ELSE 0 END), 0) as total_paid,
-               COALESCE(SUM(CASE WHEN pt.payment_type = 'Refund' THEN ABS(pt.payment_amount) ELSE 0 END), 0) as total_refunded
-        FROM enrollees e
-        LEFT JOIN payment_transactions pt ON e.enrollee_id = pt.enrollee_id
-        WHERE e.enrollee_id = ?
-        GROUP BY e.enrollee_id
-    ");
-    $stmt->execute([$enrollee_id]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    $total_fee = $result['total_fee'];
-    $total_paid = $result['total_paid'];
-    $total_refunded = $result['total_refunded'];
-    $net_paid = $total_paid - $total_refunded;
-    $new_net_paid = $net_paid - $refund_amount;
-    
-    // Determine payment status after refund
-    if($new_net_paid <= 0) {
-        $payment_status = 'Unpaid';
-    } elseif($new_net_paid >= $total_fee) {
-        $payment_status = 'Fully Paid';
-    } else {
-        $payment_status = 'Partial';
-    }
-    
-    // Record refund transaction
-    $stmt = $pdo->prepare("INSERT INTO payment_transactions (enrollee_id, payment_date, payment_amount, payment_type, receipt_number, refund_amount, refund_date, refund_reason, refund_status, processed_by, processed_by_user_id, payment_status) VALUES (?, CURDATE(), ?, 'Refund', ?, ?, CURDATE(), ?, 'Processed', ?, ?, ?)");
-    $stmt->execute([$enrollee_id, -$refund_amount, $receipt_number, $refund_amount, $refund_reason, $_SESSION['full_name'], $_SESSION['user_id'], $payment_status]);
-    
-    // Update enrollee payment status
-    $stmt = $pdo->prepare("UPDATE enrollees SET payment_status = ? WHERE enrollee_id = ?");
-    $stmt->execute([$payment_status, $enrollee_id]);
-    
-    header("Location: cashier_dashboard.php?success=Refund of ₱" . number_format($refund_amount, 2) . " processed! New Status: $payment_status. Receipt: $receipt_number");
     exit();
 }
 
@@ -144,7 +92,7 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; }
         
-        .header { background: #f39c12; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .header-left img { height: 40px; }
         .logout-btn { background: #e74c3c; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; }
@@ -155,6 +103,8 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
         .dashboard-nav { background: white; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
         .dashboard-nav a { background: #f39c12; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
         .dashboard-nav a:hover { background: #e67e22; }
+        .dashboard-nav .refund-link { background: #e74c3c; }
+        .dashboard-nav .refund-link:hover { background: #c0392b; }
         
         .info-note { background: #fef5e8; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; color: #f39c12; font-size: 13px; }
         
@@ -172,19 +122,10 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
         .payment-form button { background: #27ae60; color: white; border: none; padding: 6px 15px; border-radius: 5px; cursor: pointer; }
         .payment-form button:hover { background: #219a52; }
         
-        .refund-toggle { background: #e74c3c; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-top: 5px; }
-        .refund-toggle:hover { background: #c0392b; }
-        
         .receipt-btn { background: #27ae60; color: white; padding: 6px 12px; text-decoration: none; border-radius: 5px; font-size: 12px; display: inline-block; }
         .receipt-btn:hover { background: #219a52; }
         
         .footer { background: #2c3e50; color: white; text-align: center; padding: 20px; font-size: 12px; margin-top: 30px; }
-        
-        .refund-row { background: #fff5f5; }
-        .refund-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
-        .refund-form input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
-        .refund-form button { background: #e74c3c; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
-        .refund-form .cancel-btn { background: #95a5a6; }
         
         .net-paid-positive { color: #27ae60; font-weight: bold; }
         .net-paid-zero { color: #e74c3c; font-weight: bold; }
@@ -197,16 +138,6 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
             .dashboard-nav a { text-align: center; }
         }
     </style>
-    <script>
-        function toggleRefund(id) {
-            var refundRow = document.getElementById('refund-' + id);
-            if (refundRow.style.display === 'none' || refundRow.style.display === '') {
-                refundRow.style.display = 'table-row';
-            } else {
-                refundRow.style.display = 'none';
-            }
-        }
-    </script>
 </head>
 <body>
 <div class="header">
@@ -222,7 +153,9 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
         <div class="success"><?php echo $success; ?></div>
     <?php endif; ?>
     
-
+    <div class="dashboard-nav">
+        <a href="process_refund.php" class="refund-link">💰 Process Refunds</a>
+    </div>
     
     <div class="info-note">
         Receipt numbers are automatically generated in format: RCP-YYYY-XXXX (e.g., RCP-2024-0001)
@@ -280,29 +213,12 @@ $success = isset($_GET['success']) ? $_GET['success'] : '';
                             <input type="number" name="payment_amount" placeholder="Amount Paid" step="0.01" required>
                             <button type="submit" name="update_payment">Update & Generate Receipt</button>
                         </form>
-                        <button type="button" class="refund-toggle" onclick="toggleRefund(<?php echo $e['enrollee_id']; ?>)">Process Refund</button>
                     </td>
                     <td>
                         <a href="generate_receipt.php?student_id=<?php echo $e['enrollee_id']; ?>" class="receipt-btn">Generate Receipt</a>
                     </td>
                 </tr>
-                <tr id="refund-<?php echo $e['enrollee_id']; ?>" class="refund-row" style="display: none;">
-                    <td colspan="10" style="padding: 15px;">
-                        <strong style="color: #e74c3c;">Process Refund for <?php echo htmlspecialchars($e['first_name'] . ' ' . $e['last_name']); ?></strong>
-                        <form method="POST" class="refund-form">
-                            <input type="hidden" name="enrollee_id" value="<?php echo $e['enrollee_id']; ?>">
-                            <input type="number" name="refund_amount" placeholder="Refund Amount" step="0.01" required style="width: 150px;">
-                            <input type="text" name="refund_reason" placeholder="Reason for Refund" required style="width: 250px;">
-                            <button type="submit" name="process_refund">Process Refund</button>
-                            <button type="button" class="cancel-btn" onclick="toggleRefund(<?php echo $e['enrollee_id']; ?>)">Cancel</button>
-                        </form>
-                        <p style="font-size: 12px; color: #666; margin-top: 10px;">Note: Maximum refund amount is ₱<?php echo number_format($net_paid, 2); ?></p>
-                    </td>
-                </tr>
                 <?php endforeach; ?>
-                <?php if(count($enrollees) == 0): ?>
-                <tr><td colspan="10" style="text-align: center;">No students found</td</span>
-                <?php endif; ?>
             </tbody>
         </table>
     </div>

@@ -30,23 +30,19 @@ if(isset($_POST['update_qualification'])) {
     
     if($stmt->execute([$qualification_status, $requirements_status, $requirements_notes, $enrollment_status, $enrollment_status_reason, $enrollee_id])) {
         
-        // Check if status changed to Dropped - AUTO-ARCHIVE
         if($enrollment_status == 'Dropped' && $old_data['enrollment_status'] != 'Dropped') {
             $archive = $pdo->prepare("UPDATE enrollees SET is_archived = 1, archived_date = CURDATE(), archive_reason = ? WHERE enrollee_id = ?");
             $archive->execute([$enrollment_status_reason, $enrollee_id]);
             $success = "Student dropped and archived successfully!";
         } 
-        // Check if restored from Dropped
         elseif($old_data['enrollment_status'] == 'Dropped' && $enrollment_status != 'Dropped') {
             $restore = $pdo->prepare("UPDATE enrollees SET is_archived = 0, archived_date = NULL, archive_reason = NULL WHERE enrollee_id = ?");
             $restore->execute([$enrollee_id]);
         }
         
-        // Format old and new data for audit
         $old_formatted = "Status: {$old_data['enrollment_status']} | Qualification: {$old_data['qualification_status']} | Requirements: {$old_data['requirements_status']}";
         $new_formatted = "Status: {$enrollment_status} | Qualification: {$qualification_status} | Requirements: {$requirements_status}";
         
-        // Log the change
         $log = $pdo->prepare("INSERT INTO audit_log (user_id, action, table_name, record_id, old_data, new_data) VALUES (?, 'STATUS UPDATE', 'enrollees', ?, ?, ?)");
         $log->execute([$_SESSION['user_id'], $enrollee_id, $old_formatted, $new_formatted]);
         
@@ -68,14 +64,30 @@ if(isset($_POST['toggle_requirement'])) {
     $stmt = $pdo->prepare("UPDATE enrollees SET $requirement_field = ? WHERE enrollee_id = ?");
     $stmt->execute([$new_value, $enrollee_id]);
     
-    // Auto-update requirements status based on all requirements
-    $check = $pdo->prepare("SELECT birth_cert_received, id_picture_received, report_card_received, immunization_record_received, medical_cert_received FROM enrollees WHERE enrollee_id = ?");
-    $check->execute([$enrollee_id]);
-    $reqs = $check->fetch(PDO::FETCH_ASSOC);
+    // Check if student is Kinder 2 for proof certification requirement
+    $prog_check = $pdo->prepare("SELECT program_level FROM enrollees WHERE enrollee_id = ?");
+    $prog_check->execute([$enrollee_id]);
+    $program = $prog_check->fetchColumn();
     
-    $all_complete = ($reqs['birth_cert_received'] && $reqs['id_picture_received'] && 
-                     $reqs['report_card_received'] && $reqs['immunization_record_received'] && 
-                     $reqs['medical_cert_received']);
+    // Auto-update requirements status
+    if($program == 'KINDERGARTEN 2') {
+        $check = $pdo->prepare("SELECT birth_cert_received, id_picture_received, report_card_received, immunization_record_received, medical_cert_received, proof_certification_received FROM enrollees WHERE enrollee_id = ?");
+        $check->execute([$enrollee_id]);
+        $reqs = $check->fetch(PDO::FETCH_ASSOC);
+        
+        $all_complete = ($reqs['birth_cert_received'] && $reqs['id_picture_received'] && 
+                         $reqs['report_card_received'] && $reqs['immunization_record_received'] && 
+                         $reqs['medical_cert_received'] && $reqs['proof_certification_received']);
+    } else {
+        $check = $pdo->prepare("SELECT birth_cert_received, id_picture_received, report_card_received, immunization_record_received, medical_cert_received FROM enrollees WHERE enrollee_id = ?");
+        $check->execute([$enrollee_id]);
+        $reqs = $check->fetch(PDO::FETCH_ASSOC);
+        
+        $all_complete = ($reqs['birth_cert_received'] && $reqs['id_picture_received'] && 
+                         $reqs['report_card_received'] && $reqs['immunization_record_received'] && 
+                         $reqs['medical_cert_received']);
+    }
+    
     $new_req_status = $all_complete ? 'Complete' : 'Incomplete';
     
     $update = $pdo->prepare("UPDATE enrollees SET requirements_status = ? WHERE enrollee_id = ?");
@@ -93,9 +105,11 @@ if(isset($_GET['id'])) {
                d.birth_certificate_path, 
                d.id_picture_path, 
                d.report_card_path,
+               d.proof_certification_path,
                CASE WHEN d.birth_certificate_path IS NOT NULL AND d.birth_certificate_path != '' THEN 1 ELSE 0 END as has_birth_cert,
                CASE WHEN d.id_picture_path IS NOT NULL AND d.id_picture_path != '' THEN 1 ELSE 0 END as has_id_picture,
-               CASE WHEN d.report_card_path IS NOT NULL AND d.report_card_path != '' THEN 1 ELSE 0 END as has_report_card
+               CASE WHEN d.report_card_path IS NOT NULL AND d.report_card_path != '' THEN 1 ELSE 0 END as has_report_card,
+               CASE WHEN d.proof_certification_path IS NOT NULL AND d.proof_certification_path != '' THEN 1 ELSE 0 END as has_proof_cert
         FROM enrollees e
         LEFT JOIN documents d ON e.enrollee_id = d.enrollee_id
         WHERE e.enrollee_id = ?
@@ -110,6 +124,7 @@ if(isset($_GET['id'])) {
 }
 
 $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
+$is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,21 +156,12 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
         .toggle-btn { background: #3498db; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; }
         .status-received { color: #27ae60; font-weight: bold; }
         .status-missing { color: #e74c3c; font-weight: bold; }
-        .view-link { 
-            color: #3498db; 
-            text-decoration: none; 
-            margin-left: 10px;
-            cursor: pointer;
-            display: inline-block;
-            padding: 2px 8px;
-            background: #e8f4fd;
-            border-radius: 5px;
-        }
+        .view-link { color: #3498db; text-decoration: none; margin-left: 10px; cursor: pointer; display: inline-block; padding: 2px 8px; background: #e8f4fd; border-radius: 5px; }
         .view-link:hover { background: #d1ecf9; }
         .footer { background: #2c3e50; color: white; text-align: center; padding: 15px; font-size: 12px; }
         .approval-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        .badge { background: #27ae60; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; }
         
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -168,7 +174,6 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             justify-content: center;
             align-items: center;
         }
-        
         .modal-content {
             background-color: white;
             padding: 20px;
@@ -179,7 +184,6 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             position: relative;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
-        
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -188,59 +192,13 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
         }
-        
-        .modal-header h3 {
-            color: #2c3e50;
-        }
-        
-        .close-modal {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .close-modal:hover {
-            background: #c0392b;
-        }
-        
-        .proof-image {
-            max-width: 100%;
-            max-height: 70vh;
-            display: block;
-            margin: 0 auto;
-        }
-        
-        .proof-pdf {
-            width: 100%;
-            height: 80vh;
-            border: none;
-        }
-        
-        .modal-footer {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-        
-        .btn-download {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn-download:hover {
-            background: #2980b9;
-        }
+        .modal-header h3 { color: #2c3e50; }
+        .close-modal { background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .close-modal:hover { background: #c0392b; }
+        .proof-image { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; }
+        .proof-pdf { width: 100%; height: 80vh; border: none; }
+        .modal-footer { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: right; }
+        .btn-download { background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
     </style>
 </head>
 <body>
@@ -269,7 +227,11 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             <div class="student-info">
                 <p><strong>Student ID:</strong> <?php echo $student['enrollee_id']; ?></p>
                 <p><strong>Student Name:</strong> <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?></p>
-                <p><strong>Program:</strong> <?php echo $student['program_level']; ?></p>
+                <p><strong>Program:</strong> <?php echo $student['program_level']; ?>
+                    <?php if($is_kinder2): ?>
+                        <span class="badge">Proof of Certification Required</span>
+                    <?php endif; ?>
+                </p>
                 <p><strong>Current Status:</strong> 
                     <span style="background: <?php echo $student['enrollment_status'] == 'Enrolled' ? '#27ae60' : '#f39c12'; ?>; color:white; padding:3px 10px; border-radius:15px;">
                         <?php echo $student['enrollment_status']; ?>
@@ -288,6 +250,7 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             
             <!-- Requirements Checklist -->
             <div class="section-title">📎 Requirements Checklist</div>
+            
             <div class="requirement-item">
                 <span>📄 Birth Certificate</span>
                 <div>
@@ -366,6 +329,27 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
                 </div>
             </div>
             
+            <!-- Proof of Certification - Only for Kindergarten 2 -->
+            <?php if($is_kinder2): ?>
+            <div class="requirement-item">
+                <span>📜 Proof of Certification (Kinder 2 Completion)</span>
+                <div>
+                    <?php if($student['has_proof_cert']): ?>
+                        <span class="status-received">✓ Uploaded</span>
+                        <button class="view-link" onclick="viewDocument('<?php echo $student['proof_certification_path']; ?>', 'Proof of Certification')">View</button>
+                    <?php else: ?>
+                        <span class="status-missing">✗ Not Uploaded</span>
+                    <?php endif; ?>
+                    <form method="POST" style="display: inline; margin-left: 10px;">
+                        <input type="hidden" name="enrollee_id" value="<?php echo $student['enrollee_id']; ?>">
+                        <input type="hidden" name="requirement_field" value="proof_certification_received">
+                        <input type="hidden" name="current_value" value="<?php echo $student['proof_certification_received'] ?? 0; ?>">
+                        <button type="submit" name="toggle_requirement" class="toggle-btn"><?php echo ($student['proof_certification_received'] ?? 0) ? '✓ Mark as Not Received' : '○ Mark as Received'; ?></button>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+            
             <div class="section-title" style="margin-top: 20px;">📋 Student Status</div>
             
             <form method="POST">
@@ -431,9 +415,7 @@ $success_msg = isset($_GET['success']) ? $_GET['success'] : '';
             <h3 id="modalTitle">Document Viewer</h3>
             <button class="close-modal" onclick="closeDocumentModal()">✕ Close</button>
         </div>
-        <div id="modalBody" style="text-align: center;">
-            <!-- Content will be loaded here -->
-        </div>
+        <div id="modalBody" style="text-align: center;"></div>
         <div class="modal-footer">
             <a id="downloadLink" href="#" class="btn-download" download>📥 Download</a>
         </div>
@@ -467,19 +449,13 @@ function closeDocumentModal() {
     document.getElementById('documentModal').style.display = 'none';
 }
 
-// Close modal when clicking outside the content
 window.onclick = function(event) {
     var modal = document.getElementById('documentModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
+    if (event.target == modal) modal.style.display = 'none';
 }
 
-// Close modal with Escape key
 document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeDocumentModal();
-    }
+    if (event.key === 'Escape') closeDocumentModal();
 });
 </script>
 </body>

@@ -293,6 +293,7 @@ $k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
         .portal-btn.view h3 { color: #9b59b6; }
         .portal-btn.tuition h3 { color: #1abc9c; }
         .portal-btn.payment h3 { color: #f39c12; }
+        .portal-btn.refund h3 { color: #e74c3c; }
 
         .footer {
             background: #2c3e50;
@@ -467,6 +468,10 @@ $k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
                     <h3>💳 Pay Online</h3>
                     <p>GCash, Bank Transfer, Over the Counter</p>
                 </a>
+                <a href="request_refund.php" class="portal-btn refund">
+                    <h3>📄 Request Refund</h3>
+                    <p>Submit refund request with letter</p>
+                </a>
             </div>
         </div>
     </section>
@@ -499,6 +504,7 @@ $k2_fee = getSetting($pdo, 'enrollment_fee_k2') ?: 18300;
                 <a href="view_enrollees.php">Enrolled Students</a>
                 <a href="tuition_fees.php">Tuition and Fees</a>
                 <a href="online_payment.php">Pay Online</a>
+                <a href="request_refund.php">Request Refund</a>
             </div>
             <div class="footer-col">
                 <h4>Staff Portals</h4>
