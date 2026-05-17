@@ -115,6 +115,47 @@ $is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
         
         .footer { background: #2c3e50; color: white; text-align: center; padding: 15px; font-size: 12px; }
         
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .modal-header h3 { color: #2c3e50; }
+        .close-modal { background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .close-modal:hover { background: #c0392b; }
+        .proof-image { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; }
+        .proof-pdf { width: 100%; height: 80vh; border: none; }
+        .modal-footer { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: right; }
+        .btn-download { background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .view-link { color: #3498db; text-decoration: none; cursor: pointer; display: inline-block; padding: 2px 8px; background: #e8f4fd; border-radius: 5px; }
+        .view-link:hover { background: #d1ecf9; }
+        
         @media (max-width: 768px) {
             .info-row { flex-direction: column; }
             .label { width: 100%; margin-bottom: 5px; }
@@ -194,7 +235,7 @@ $is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
     
     <div id="tab-payment" class="tab-content">
         <?php if(count($payments) > 0): ?>
-        </table>
+        <table>
             <thead><tr><th>Date</th><th>Receipt #</th><th>Type</th><th>Amount</th><th>Refund</th><th>Processed By</th></tr></thead>
             <tbody>
                 <?php foreach($payments as $payment): ?>
@@ -216,11 +257,35 @@ $is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
     
     <div id="tab-documents" class="tab-content">
         <?php if($documents): ?>
-            <div class="info-row"><div class="label">Birth Certificate:</div><div class="value"><?php echo $documents['birth_certificate_path'] ? '<a href="'.$documents['birth_certificate_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
-            <div class="info-row"><div class="label">2x2 ID Picture:</div><div class="value"><?php echo $documents['id_picture_path'] ? '<a href="'.$documents['id_picture_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
-            <div class="info-row"><div class="label">Report Card:</div><div class="value"><?php echo $documents['report_card_path'] ? '<a href="'.$documents['report_card_path'].'" target="_blank">View File</a>' : 'Not uploaded'; ?></div></div>
+            <div class="info-row"><div class="label">Birth Certificate:</div><div class="value">
+                <?php if($documents['birth_certificate_path']): ?>
+                    <button class="view-link" onclick="viewDocument('<?php echo $documents['birth_certificate_path']; ?>', 'Birth Certificate')">📄 View Birth Certificate</button>
+                <?php else: ?>
+                    Not uploaded
+                <?php endif; ?>
+            </div></div>
+            <div class="info-row"><div class="label">2x2 ID Picture:</div><div class="value">
+                <?php if($documents['id_picture_path']): ?>
+                    <button class="view-link" onclick="viewDocument('<?php echo $documents['id_picture_path']; ?>', 'ID Picture')">🖼️ View ID Picture</button>
+                <?php else: ?>
+                    Not uploaded
+                <?php endif; ?>
+            </div></div>
+            <div class="info-row"><div class="label">Report Card:</div><div class="value">
+                <?php if($documents['report_card_path']): ?>
+                    <button class="view-link" onclick="viewDocument('<?php echo $documents['report_card_path']; ?>', 'Report Card')">📑 View Report Card</button>
+                <?php else: ?>
+                    Not uploaded
+                <?php endif; ?>
+            </div></div>
             <?php if($is_kinder2): ?>
-            <div class="info-row"><div class="label">Proof of Certification:</div><div class="value"><?php echo ($documents['proof_certification_path'] ?? '') ? '<a href="'.$documents['proof_certification_path'].'" target="_blank">View File</a>' : 'Not uploaded (Required for Kinder 2)'; ?></div></div>
+            <div class="info-row"><div class="label">Proof of Certification:</div><div class="value">
+                <?php if($documents['proof_certification_path'] ?? ''): ?>
+                    <button class="view-link" onclick="viewDocument('<?php echo $documents['proof_certification_path']; ?>', 'Proof of Certification')">📜 View Proof of Certification</button>
+                <?php else: ?>
+                    Not uploaded (Required for Kinder 2)
+                <?php endif; ?>
+            </div></div>
             <?php endif; ?>
         <?php else: ?>
             <p>No documents uploaded yet.</p>
@@ -241,6 +306,20 @@ $is_kinder2 = ($student['program_level'] == 'KINDERGARTEN 2');
     </div>
 </div>
 
+<!-- Modal Popup for Viewing Documents -->
+<div id="documentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Document Viewer</h3>
+            <button class="close-modal" onclick="closeDocumentModal()">✕ Close</button>
+        </div>
+        <div id="modalBody" style="text-align: center;"></div>
+        <div class="modal-footer">
+            <a id="downloadLink" href="#" class="btn-download" download>📥 Download</a>
+        </div>
+    </div>
+</div>
+
 <script>
 function showTab(tabName) {
     var tabs = ['info', 'status', 'parents', 'payment', 'documents', 'consent'];
@@ -256,6 +335,45 @@ function showTab(tabName) {
     });
     event.target.classList.add('active');
 }
+
+function viewDocument(filePath, documentName) {
+    var modal = document.getElementById('documentModal');
+    var modalTitle = document.getElementById('modalTitle');
+    var modalBody = document.getElementById('modalBody');
+    var downloadLink = document.getElementById('downloadLink');
+    
+    modalTitle.innerHTML = documentName + ' - Student Document';
+    downloadLink.href = filePath;
+    
+    var fileExtension = filePath.split('.').pop().toLowerCase();
+    
+    if (fileExtension === 'pdf') {
+        modalBody.innerHTML = '<iframe src="' + filePath + '" class="proof-pdf"></iframe>';
+    } else if (fileExtension === 'jpg' || fileExtension === 'jpeg' || fileExtension === 'png' || fileExtension === 'gif') {
+        modalBody.innerHTML = '<img src="' + filePath + '" class="proof-image" alt="Document">';
+    } else {
+        modalBody.innerHTML = '<p>Unable to preview this file type. <a href="' + filePath + '" target="_blank">Click here to open</a></p>';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeDocumentModal() {
+    document.getElementById('documentModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    var modal = document.getElementById('documentModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeDocumentModal();
+    }
+});
 </script>
 </body>
 </html>

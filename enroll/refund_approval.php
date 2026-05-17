@@ -251,7 +251,7 @@ $processed_requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div><span class="info-label">Refund Amount:</span> <strong style="color:#e74c3c;">₱<?php echo number_format($req['refund_amount'], 2); ?></strong></div>
                         <div><span class="info-label">Reason:</span> <?php echo nl2br(htmlspecialchars($req['refund_reason'])); ?></div>
                         <div><span class="info-label">Letter:</span> 
-                            <button class="btn-view" onclick="openLetterModal('<?php echo $req['letter_path']; ?>', '<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>')">📄 View Letter</button>
+                        <button class="btn-view" onclick="openLetterModal('<?php echo $req['letter_path']; ?>', '<?php echo htmlspecialchars($req['first_name'] . ' ' . $req['last_name']); ?>')">📄 View Letter</button>
                         </div>
                     </div>
                     <form method="POST" style="margin-top: 15px;">

@@ -54,8 +54,9 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding: 4px 10px;
             background: #e8f4fd;
             border-radius: 5px;
+            border: none;
         }
-        .proof-link:hover { background: #d1ecf9; text-decoration: none; }
+        .proof-link:hover { background: #d1ecf9; }
         
         .verified { color: #27ae60; font-weight: bold; }
         .pending { color: #e74c3c; font-weight: bold; }
@@ -73,11 +74,10 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0,0,0,0.85);
             justify-content: center;
             align-items: center;
         }
-        
         .modal-content {
             background-color: white;
             padding: 20px;
@@ -88,7 +88,6 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             position: relative;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
-        
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -97,59 +96,13 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
         }
-        
-        .modal-header h3 {
-            color: #2c3e50;
-        }
-        
-        .close-modal {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .close-modal:hover {
-            background: #c0392b;
-        }
-        
-        .proof-image {
-            max-width: 100%;
-            max-height: 70vh;
-            display: block;
-            margin: 0 auto;
-        }
-        
-        .proof-pdf {
-            width: 100%;
-            height: 80vh;
-            border: none;
-        }
-        
-        .modal-footer {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-            text-align: right;
-        }
-        
-        .btn-download {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn-download:hover {
-            background: #2980b9;
-        }
+        .modal-header h3 { color: #2c3e50; }
+        .close-modal { background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .close-modal:hover { background: #c0392b; }
+        .proof-image { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; }
+        .proof-pdf { width: 100%; height: 80vh; border: none; }
+        .modal-footer { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; text-align: right; }
+        .btn-download { background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
         
         @media (max-width: 768px) {
             th, td { font-size: 12px; padding: 8px; }
@@ -231,9 +184,7 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <h3 id="modalTitle">Payment Proof</h3>
             <button class="close-modal" onclick="closeModal()">✕ Close</button>
         </div>
-        <div id="modalBody" style="text-align: center;">
-            <!-- Content will be loaded here -->
-        </div>
+        <div id="modalBody" style="text-align: center;"></div>
         <div class="modal-footer">
             <a id="downloadLink" href="#" class="btn-download" download>📥 Download</a>
         </div>
@@ -267,7 +218,6 @@ function closeModal() {
     document.getElementById('proofModal').style.display = 'none';
 }
 
-// Close modal when clicking outside the content
 window.onclick = function(event) {
     var modal = document.getElementById('proofModal');
     if (event.target == modal) {
@@ -275,7 +225,6 @@ window.onclick = function(event) {
     }
 }
 
-// Close modal with Escape key
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeModal();
